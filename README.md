@@ -55,3 +55,14 @@ Catatan:
 - WebRTC nonaktif secara bawaan (lihat bagian Kolaborasi). Akses ke data kolaborasi diatur RLS Supabase.
 - Login tautan email memakai PKCE: buka tautannya di browser yang sama dengan tempat kamu meminta login.
 - Proyek Supabase gratis di-pause bila lama tidak dipakai; aktifkan lagi dari dashboard.
+
+## Proyek dan kolaborator
+Panel **Proyek** (kanan) mengelompokkan script per proyek; tiap proyek punya id sendiri. Kolaborator ditambahkan **di tingkat proyek**
+(tombol **Undang** di proyek, lewat email akun mereka): mereka bisa membuka dan menulis di semua script di proyek itu,
+termasuk script yang ditambahkan kemudian, dan boleh membuat script baru di sana.
+
+- Hanya pemilik proyek yang bisa mengundang, mengganti nama, atau menghapus proyek. Memindahkan script ke proyek lain hanya oleh pemilik script.
+- Script tanpa proyek tetap bisa dibagikan satu per satu lewat tombol **Undang script** di header.
+- Menghapus proyek mengeluarkan script dari proyek. Script milik kolaborator yang ada di proyek itu tidak lagi terlihat oleh pemilik proyek.
+- Tanpa Supabase, pengelompokan hanya tersimpan di browser ini.
+- Setelah memperbarui kode, jalankan ulang `supabase/schema.sql` (aman diulang).

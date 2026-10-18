@@ -286,6 +286,100 @@
 				color: #8fa2ab;
 				font-size: 11px;
 			}
+			#proj {
+				position: fixed;
+				top: var(--hh, 3.4rem);
+				bottom: 2rem;
+				right: 0;
+				width: 16rem;
+				padding: 0.8rem 0.6rem;
+				overflow: auto;
+				background: var(--bar);
+				transform: translateX(100%);
+				transition: transform 0.3s ease;
+				z-index: 4;
+			}
+			body.proj #proj {
+				transform: none;
+			}
+			body.proj main {
+				margin-right: 16rem;
+			}
+			#proj h2 {
+				margin: 0 0 0.4rem;
+				font-size: 12px;
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+				color: #9fb0b8;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+			#proj h2 button,
+			#proj .ph button {
+				padding: 0.1rem 0.5rem;
+				font-size: 12px;
+			}
+			#proj .ph {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.3rem;
+				align-items: center;
+				margin: 0.9rem 0 0.2rem;
+			}
+			#proj .ph b {
+				flex: 1 1 100%;
+				font-size: 14px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			#proj .ph small {
+				flex: 1;
+				color: #8fa2ab;
+			}
+			#proj .sc {
+				display: block;
+				width: 100%;
+				text-align: left;
+				background: none;
+				border: 0;
+				border-left: 3px solid transparent;
+				border-radius: 0 6px 6px 0;
+				padding: 0.35rem 0.6rem;
+				color: #c5d2d8;
+				font-size: 13px;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			#proj .sc[aria-current="true"] {
+				border-left-color: var(--acc);
+				background: #2a3a45;
+				color: #fff;
+			}
+			#proj ul {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			#proj .em {
+				display: block;
+				color: #8fa2ab;
+				margin: 0.2rem 0;
+				font-size: 12px;
+			}
+			#proj select {
+				width: 100%;
+				margin: 0.2rem 0 0.3rem;
+			}
+			@media (max-width: 1300px) {
+				body.proj main {
+					margin-right: 0;
+				}
+				#proj {
+					box-shadow: -4px 0 20px #0008;
+				}
+			}
 			body.drop::after {
 				content: "Lepas file .txt untuk mengimpor";
 				position: fixed;
@@ -474,7 +568,8 @@
 				footer,
 				details,
 				#chip,
-				#nav {
+				#nav,
+				#proj {
 					display: none !important;
 				}
 				main {
@@ -519,8 +614,12 @@
 			>
 				Masuk
 			</button>
-			<button id="invite" hidden title="Undang kolaborator lewat email">
-				Undang
+			<button
+				id="invite"
+				hidden
+				title="Undang kolaborator ke script ini (untuk script tanpa proyek; di dalam proyek, undang lewat panel Proyek)"
+			>
+				Undang script
 			</button>
 			<label
 				title="Ubah jenis baris yang sedang dipilih (Alt+1 sampai Alt+6). Teks ikut diformat otomatis."
@@ -559,6 +658,13 @@
 				<input id="max" type="number" min="0" max="20" value="3"
 			/></label>
 			<button id="bnav" aria-pressed="false">Adegan</button>
+			<button
+				id="bproj"
+				aria-pressed="false"
+				title="Proyek dan script-nya"
+			>
+				Proyek
+			</button>
 			<button
 				id="bfocus"
 				aria-pressed="false"
@@ -627,6 +733,18 @@
 						dibuat huruf biasa. Bisa untuk beberapa baris sekaligus.
 					</li>
 					<li>
+						<b>Proyek</b>: panel <i>Proyek</i> di kanan
+						mengelompokkan script per proyek (tiap proyek punya id
+						sendiri). <i>Undang</i> di proyek memberi kolaborator
+						akses ke <b>semua script</b> di proyek itu, termasuk
+						script yang ditambahkan kemudian.
+						<i>+ Proyek</i> membuat proyek beserta script
+						pertamanya, <i>+ Script</i> menambah script ke proyek
+						itu, dan dropdown
+						<i>Naskah ini ada di proyek</i> memindahkan script yang
+						sedang dibuka.
+					</li>
+					<li>
 						<b>Naskah baru</b>: tombol <i>+ Naskah baru</i> membuka
 						naskah kosong dengan tautan sendiri. Naskah lama tidak
 						terhapus; buka lagi dari daftar di jendela yang sama,
@@ -673,6 +791,7 @@
 			</div>
 		</details>
 		<aside id="nav" aria-label="Daftar adegan"></aside>
+		<aside id="proj" aria-label="Proyek"></aside>
 		<main>
 			<div class="paper">
 				<div id="chip" hidden></div>
@@ -1600,9 +1719,13 @@
 						.split("\n")
 						.map((x) => x.trim().replace(/^[.!@>](?![.!@>])/, ""))
 						.find(Boolean);
-					const l = readList().filter((x) => x.room !== room);
-					if (first) l.unshift({ room, title: first.slice(0, 48) });
-					ls.set(LK, JSON.stringify(l.slice(0, 12)));
+					const old = readList(),
+						ex = old.find((x) => x.room === room),
+						title = first ? first.slice(0, 48) : ex && ex.title;
+					const l = old.filter((x) => x.room !== room);
+					if (title) l.unshift({ room, title });
+					ls.set(LK, JSON.stringify(l.slice(0, 200)));
+					renderProj();
 					if (first && cloudApi) cloudApi.title(first.slice(0, 48));
 				}, 800);
 			}
@@ -1628,6 +1751,7 @@
 				$("#recent").innerHTML = l.length
 					? "<small>Atau buka naskah lain:</small>" +
 						l
+							.slice(0, 8)
 							.map(
 								(x) =>
 									`<button type="button" data-r="${esc(x.room)}">${esc(x.title)}</button>`,
@@ -1645,7 +1769,7 @@
 				}
 			};
 			ndlg.addEventListener("close", () => {
-				if (ndlg.returnValue === "new") go(rnd());
+				if (ndlg.returnValue === "new") newScript(curProj());
 			});
 			addEventListener("hashchange", () => {
 				const r = location.hash.slice(1);
@@ -1713,7 +1837,7 @@
 					await idb.whenSynced;
 					let { data: row, error } = await sb
 						.from("scripts")
-						.select("id,state,state_upto,owner")
+						.select("id,state,state_upto,owner,project_id")
 						.eq("id", room)
 						.maybeSingle();
 					if (error) {
@@ -1722,10 +1846,14 @@
 						return;
 					}
 					if (!row) {
+						await projApi.syncUp();
 						const ins = await sb
 							.from("scripts")
-							.insert({ id: room })
-							.select("id,state,state_upto,owner")
+							.insert({
+								id: room,
+								project_id: readProj().map[room] || null,
+							})
+							.select("id,state,state_upto,owner,project_id")
 							.single();
 						if (ins.error) {
 							attached = null;
@@ -1737,6 +1865,22 @@
 							return;
 						}
 						row = ins.data;
+					}
+					{
+						const lp = readProj().map[room] || null;
+						if (row.owner !== u.id || !lp) {
+							// pemilik proyek/koleganya: data cloud menang
+							if (row.project_id && row.project_id !== lp) {
+								const P = readProj();
+								P.map[room] = row.project_id;
+								writeProj(P);
+								renderProj();
+							}
+						} else if (lp !== row.project_id)
+							await sb
+								.from("scripts")
+								.update({ project_id: lp })
+								.eq("id", room);
 					}
 					// muat snapshot + log update dari database
 					const cdoc = new Y.Doc();
@@ -1814,16 +1958,24 @@
 							if (st === "SUBSCRIBED") presenceTrack();
 						});
 					const owner = row.owner === u.id;
-					$("#invite").hidden = !owner;
+					cloudOwner = owner;
+					syncInviteBtn();
 					cloudApi = {
 						title: async (t) => {
-							if (owner && t !== lastTitle) {
+							if (t !== lastTitle) {
 								lastTitle = t;
+								await sb.rpc("set_title", {
+									p_sid: room,
+									p_title: t,
+								});
+							}
+						},
+						setProject: async (pid) => {
+							if (owner)
 								await sb
 									.from("scripts")
-									.update({ title: t })
+									.update({ project_id: pid })
 									.eq("id", room);
-							}
 						},
 						list: async () => {
 							const { data } = await sb
@@ -1847,9 +1999,7 @@
 						});
 						alert(
 							e
-								? /user_not_found/.test(e.message)
-									? "Email itu belum punya akun. Minta dia masuk dulu lewat tombol Masuk, lalu undang lagi."
-									: e.message
+								? inviteErr(e)
 								: `${email} sekarang bisa membuka naskah ini.`,
 						);
 					};
@@ -1857,15 +2007,13 @@
 				}
 				sb.auth.onAuthStateChange((_ev, session) => {
 					user = (session && session.user) || null;
+					projApi = user ? makeProjApi(sb, user) : null;
 					btn.textContent = user ? `${user.email} · Keluar` : "Masuk";
 					if (user)
-						setTimeout(
-							() =>
-								attach(user).catch((e) =>
-									status("☁ " + e.message),
-								),
-							0,
-						);
+						setTimeout(() => {
+							refreshProj();
+							attach(user).catch((e) => status("☁ " + e.message));
+						}, 0);
 				});
 				btn.onclick = async () => {
 					if (!user) {
@@ -2160,6 +2308,241 @@
 				r.setEnd(s.anchorNode, s.anchorOffset);
 				if (r.toString().length !== S.p.textContent.length) hideSug();
 			});
+
+			/* ---------- Proyek: tiap proyek punya id dan beberapa script ---------- */
+			const PK = "naskah:proj",
+				proj = $("#proj");
+			let projApi = null,
+				cloudOwner = false;
+			const readProj = () => {
+				try {
+					const p = JSON.parse(ls.get(PK) || "null");
+					return p && p.projects ? p : { projects: [], map: {} };
+				} catch {
+					return { projects: [], map: {} };
+				}
+			};
+			const writeProj = (p) => ls.set(PK, JSON.stringify(p));
+			const curProj = () => readProj().map[room] || null;
+			const syncInviteBtn = () => {
+				$("#invite").hidden = !(cloudOwner && !curProj());
+			};
+			const inviteErr = (e) =>
+				/user_not_found/.test(e.message)
+					? "Email itu belum punya akun. Minta dia masuk dulu lewat tombol Masuk, lalu undang lagi."
+					: /not_owner/.test(e.message)
+						? "Hanya pemilik yang bisa mengundang."
+						: e.message;
+			const addProject = (name) => {
+				const P = readProj(),
+					id = rnd().slice(0, 6);
+				P.projects.push({ id, name });
+				writeProj(P);
+				if (projApi) projApi.save({ id, name });
+				return id;
+			};
+			function newScript(pid) {
+				const r = rnd(),
+					P = readProj();
+				if (pid) P.map[r] = pid;
+				writeProj(P);
+				const L = readList();
+				L.unshift({ room: r, title: "Naskah baru" });
+				ls.set(LK, JSON.stringify(L.slice(0, 200)));
+				go(r);
+			}
+			function renderProj() {
+				const P = readProj(),
+					L = readList(),
+					titles = new Map();
+				if (!L.some((x) => x.room === room))
+					titles.set(room, "Naskah ini");
+				L.forEach((x) => titles.set(x.room, x.title || "Tanpa judul"));
+				const groups = new Map(P.projects.map((p) => [p.id, []])),
+					loose = [];
+				titles.forEach((t, r) =>
+					(groups.get(P.map[r]) || loose).push([r, t]),
+				);
+				const item = ([r, t]) =>
+					`<li><button class="sc" data-r="${esc(r)}"${r === room ? ' aria-current="true"' : ""}>${esc(t)}</button></li>`;
+				const list = (a) =>
+					a.length
+						? `<ul>${a.map(item).join("")}</ul>`
+						: '<small class="em">Belum ada script</small>';
+				const cp = P.map[room] || "";
+				const head = `<h2>Proyek <button data-a="newp">+ Proyek</button></h2><label class="em">Naskah ini ada di proyek<select id="pmove"><option value="">(tanpa proyek)</option>${P.projects.map((p) => `<option value="${esc(p.id)}"${p.id === cp ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label>`;
+				const body =
+					P.projects
+						.map((p) => {
+							const a = groups.get(p.id);
+							const mine = p.mine !== false;
+							return `<section><div class="ph"><b>${esc(p.name)}</b><small>#${esc(p.id)} · ${a.length} script${mine ? "" : " · dibagikan"}</small><button data-a="adds" data-p="${esc(p.id)}">+ Script</button>${mine ? `<button data-a="inv" data-p="${esc(p.id)}" title="Undang kolaborator ke proyek ini">Undang</button><button data-a="ren" data-p="${esc(p.id)}" title="Ganti nama">✎</button><button data-a="del" data-p="${esc(p.id)}" title="Hapus proyek">🗑</button>` : ""}</div>${list(a)}</section>`;
+						})
+						.join("") +
+					(loose.length
+						? `<section><div class="ph"><b>Tanpa proyek</b><small>${loose.length} script</small></div>${list(loose)}</section>`
+						: "");
+				const st = proj.scrollTop;
+				proj.innerHTML = head + body;
+				proj.scrollTop = st;
+				syncInviteBtn();
+			}
+			proj.addEventListener("click", async (e) => {
+				const b = e.target.closest("button");
+				if (!b) return;
+				if (b.dataset.r) {
+					if (b.dataset.r !== room) go(b.dataset.r);
+					return;
+				}
+				const a = b.dataset.a,
+					pid = b.dataset.p;
+				if (a === "newp") {
+					const n = (prompt("Nama proyek baru:") || "")
+						.trim()
+						.slice(0, 40);
+					if (n) newScript(addProject(n));
+				} else if (a === "adds") newScript(pid);
+				else if (a === "inv") {
+					if (!projApi) {
+						alert(
+							"Masuk dulu (tombol Masuk di header) supaya bisa mengundang kolaborator.",
+						);
+						return;
+					}
+					const email = (
+						prompt(
+							"Email kolaborator (harus sudah punya akun Naskah). Dia akan bisa membuka semua script di proyek ini:",
+						) || ""
+					).trim();
+					if (!email) return;
+					try {
+						await projApi.invite(pid, email);
+						alert(
+							`${email} sekarang bisa melihat semua script di proyek ini.`,
+						);
+					} catch (err) {
+						alert(inviteErr(err));
+					}
+				} else if (a === "ren") {
+					const P = readProj(),
+						p = P.projects.find((x) => x.id === pid);
+					if (!p) return;
+					const n = (prompt("Nama proyek:", p.name) || "")
+						.trim()
+						.slice(0, 40);
+					if (n) {
+						p.name = n;
+						writeProj(P);
+						if (projApi) projApi.save(p);
+						renderProj();
+					}
+				} else if (
+					a === "del" &&
+					confirm(
+						"Hapus proyek ini? Script di dalamnya tidak dihapus, hanya dikeluarkan dari proyek.",
+					)
+				) {
+					const P = readProj();
+					P.projects = P.projects.filter((x) => x.id !== pid);
+					for (const r in P.map)
+						if (P.map[r] === pid) delete P.map[r];
+					writeProj(P);
+					if (projApi) projApi.remove(pid);
+					renderProj();
+				}
+			});
+			proj.addEventListener("change", (e) => {
+				if (e.target.id !== "pmove") return;
+				const v = e.target.value,
+					P = readProj();
+				v ? (P.map[room] = v) : delete P.map[room];
+				writeProj(P);
+				if (cloudApi) cloudApi.setProject(v || null);
+				renderProj();
+			});
+			function makeProjApi(sb, user) {
+				const syncUp = async () => {
+					// unggah proyek milikku yang baru ada di perangkat ini
+					const { data } = await sb.from("projects").select("id"),
+						have = new Set((data || []).map((x) => x.id));
+					const miss = readProj().projects.filter(
+						(p) => p.mine !== false && !have.has(p.id),
+					);
+					if (miss.length)
+						await sb
+							.from("projects")
+							.upsert(
+								miss.map((p) => ({ id: p.id, name: p.name })),
+							);
+				};
+				return {
+					uid: user.id,
+					syncUp,
+					save: async (p) => {
+						await sb
+							.from("projects")
+							.upsert({ id: p.id, name: p.name });
+					},
+					remove: async (id) => {
+						await sb.from("projects").delete().eq("id", id);
+					},
+					invite: async (pid, email) => {
+						await syncUp();
+						const { error } = await sb.rpc(
+							"invite_project_member",
+							{ p_pid: pid, p_email: email },
+						);
+						if (error) throw error;
+					},
+					overview: async () => {
+						const [a, b] = await Promise.all([
+							sb
+								.from("projects")
+								.select("id,name,owner")
+								.order("created_at"),
+							sb
+								.from("scripts")
+								.select("id,title,project_id")
+								.order("updated_at", { ascending: false })
+								.limit(200),
+						]);
+						return {
+							projects: a.data || [],
+							scripts: b.data || [],
+						};
+					},
+				};
+			}
+			async function refreshProj() {
+				if (!projApi) return;
+				try {
+					await projApi.syncUp();
+					const o = await projApi.overview(),
+						P = readProj(),
+						L = readList(),
+						uid = projApi.uid;
+					o.projects.forEach((c) => {
+						const x = P.projects.find((p) => p.id === c.id),
+							mine = c.owner === uid;
+						x
+							? ((x.name = c.name), (x.mine = mine))
+							: P.projects.push({ id: c.id, name: c.name, mine });
+					});
+					o.scripts.forEach((c) => {
+						if (c.project_id) P.map[c.id] = c.project_id;
+						if (!L.some((x) => x.room === c.id))
+							L.push({
+								room: c.id,
+								title: c.title || "Tanpa judul",
+							});
+					});
+					writeProj(P);
+					ls.set(LK, JSON.stringify(L.slice(0, 200)));
+					renderProj();
+				} catch {}
+			}
+			tog("#bproj", B, "proj", "naskah:proj-open", innerWidth > 1300);
+			renderProj();
 
 			let curEl = null;
 			render();
