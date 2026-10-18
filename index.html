@@ -1858,7 +1858,7 @@
 				pgStyle = $("#pgsz"),
 				fluidMQ = matchMedia("(max-width: 820px)");
 			let paperKey = ls.get("naskah:paper");
-			if (!PAPERS[paperKey]) paperKey = "a4";
+			if (!PAPERS[paperKey]) paperKey = "letter";
 			let pgCfg = null;
 
 			/* Hitung letak tiap paragraf per lembar. Satuan: baris (1em). Fungsi murni. */
