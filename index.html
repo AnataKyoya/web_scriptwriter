@@ -17,51 +17,56 @@
 		/>
 		<style>
 			:root {
-				--desk: #22303a;
-				--bar: #1a252d;
+				--desk: #e9edf0;
+				--win: #f7f8f9;
+				--card: #fff;
+				--line: #e6eaed;
+				--line2: #dfe5e8;
+				--text: #1f2a30;
+				--mute: #5f6b72;
+				--sel: #e9edf0;
+				--acc: #3fb5a3;
+				--acct: #17806f;
+				--acc-ink: #07211d;
+				--danger: #c0392b;
 				--paper: #fcfcfa;
 				--ink: #1b1b1b;
-				--mute: #8a949b;
-				--acc: #3fb5a3;
-				--bar-ink: #e6edf0;
+				--shadow: 0 20px 60px rgba(31, 42, 48, 0.12);
+				--cardsh: 0 1px 3px rgba(31, 42, 48, 0.1);
+			}
+			.dark {
+				--desk: #0f1418;
+				--win: #161d22;
+				--card: #1f2830;
+				--line: #2a353c;
+				--line2: #34424b;
+				--text: #e6edf0;
+				--mute: #9fb0b8;
+				--sel: #25313a;
+				--acct: #5fd3c1;
+				--paper: #222c33;
+				--ink: #e7e5de;
+				--shadow: 0 20px 60px #000a;
+				--cardsh: 0 1px 3px #0006;
 			}
 			* {
 				box-sizing: border-box;
+			}
+			[hidden] {
+				display: none !important;
 			}
 			html,
 			body {
 				margin: 0;
 				background: var(--desk);
-				color: var(--bar-ink);
+				color: var(--text);
 				font:
 					14px/1.4 "Public Sans",
 					system-ui,
 					sans-serif;
 			}
-			header {
-				transition:
-					transform 0.35s ease,
-					opacity 0.35s ease;
-				position: sticky;
-				top: 0;
-				z-index: 5;
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.5rem 1rem;
-				align-items: center;
-				padding: 0.6rem 1rem;
-				background: var(--bar);
-				border-bottom: 1px solid #0006;
-			}
-			header h1 {
-				margin: 0 auto 0 0;
-				font:
-					700 17px "Courier Prime",
-					monospace;
-				letter-spacing: 0.02em;
-			}
-			header small {
-				color: #9fb0b8;
+			body {
+				padding: 24px;
 			}
 			button,
 			select,
@@ -70,9 +75,9 @@
 			input[type="number"] {
 				font: inherit;
 				color: inherit;
-				background: #2a3a45;
-				border: 1px solid #3b4e5a;
-				border-radius: 6px;
+				background: var(--card);
+				border: 1px solid var(--line2);
+				border-radius: 8px;
 				padding: 0.35rem 0.7rem;
 			}
 			button {
@@ -83,86 +88,204 @@
 				cursor: default;
 			}
 			button:hover {
-				background: #34495a;
+				background: var(--sel);
 			}
 			button:focus-visible,
 			input:focus-visible,
+			select:focus-visible,
 			#ed:focus-visible {
 				outline: 2px solid var(--acc);
 				outline-offset: 2px;
 			}
-			input[type="text"] {
-				width: 8.5rem;
-			}
 			input[type="number"] {
-				width: 3.4rem;
+				width: 3.6rem;
 			}
 			label {
 				display: inline-flex;
 				align-items: center;
 				gap: 0.4rem;
-				color: #c5d2d8;
+			}
+			svg {
+				flex: 0 0 auto;
+			}
+
+			/* ----- kerangka: sidebar | editor | panel alat ----- */
+			.app {
+				display: flex;
+				flex-wrap: wrap;
+				min-height: calc(100vh - 48px);
+				background: var(--win);
+				border-radius: 28px;
+				box-shadow:
+					var(--shadow),
+					0 0 0 1px var(--line2);
+				overflow: clip;
+			}
+			#side {
+				flex: 0 0 260px;
+				max-width: 100%;
+				border-right: 1px solid var(--line);
+			}
+			#tools {
+				flex: 0 0 300px;
+				max-width: 100%;
+				border-left: 1px solid var(--line);
+			}
+			.center {
+				flex: 999 1 520px;
+				min-width: 0;
+				display: flex;
+				flex-direction: column;
+			}
+			.stick {
+				position: sticky;
+				top: 0;
+				max-height: 100vh;
+				overflow: auto;
+				padding: 24px 18px;
+			}
+			#tools .stick {
+				padding: 0;
+			}
+			.brand {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				height: 28px;
+				margin: 0 0 22px;
+				padding: 0 8px;
+				font:
+					700 20px "Courier Prime",
+					monospace;
+				letter-spacing: 0.02em;
+			}
+			.sech {
+				padding: 0 8px 6px;
+				font-size: 12px;
+				font-weight: 600;
+				letter-spacing: 0.07em;
+				text-transform: uppercase;
+				color: var(--mute);
+			}
+			.div {
+				border-top: 1.5px dotted var(--line2);
+				margin: 20px 0;
+			}
+			#new {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				width: 100%;
+				margin-top: 10px;
+				padding: 9px 12px;
+				border: 1.5px dashed var(--line2);
+				border-radius: 12px;
+				background: transparent;
+				color: var(--mute);
+				font-weight: 500;
+			}
+
+			/* ----- bilah atas editor ----- */
+			header {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				min-height: 72px;
+				padding: 12px 28px;
+				border-bottom: 1px solid var(--line);
+				transition: opacity 0.35s ease;
+			}
+			.crumb {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				min-width: 0;
+				color: var(--mute);
+			}
+			#sname {
+				width: 240px;
+				max-width: 100%;
+				background: transparent;
+				border-color: transparent;
+				font-weight: 600;
+				color: var(--text);
+			}
+			#sname:hover,
+			#sname:focus {
+				background: var(--card);
+				border-color: var(--line2);
+			}
+			.ur {
+				display: flex;
+				gap: 8px;
+			}
+			.ur button {
+				width: 40px;
+				height: 40px;
+				display: grid;
+				place-items: center;
+				padding: 0;
+				border: 0;
+				border-radius: 12px;
+				box-shadow: var(--cardsh);
 			}
 			#peers {
 				display: inline-flex;
 				align-items: center;
 				gap: 0.3rem;
-				color: #c5d2d8;
+				color: var(--mute);
 			}
 			.dot {
 				width: 0.7rem;
 				height: 0.7rem;
 				border-radius: 50%;
 				display: inline-block;
-				border: 2px solid var(--bar);
+				border: 2px solid var(--win);
 			}
-			details {
-				max-width: 46rem;
-				margin: 0.8rem auto 0;
-				padding: 0 1rem;
+			#login {
+				max-width: 180px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				border-radius: 999px;
+				font-size: 13px;
 			}
-			details summary {
-				cursor: pointer;
-				color: #9fb0b8;
-			}
-			details div {
-				background: #2a3a45;
-				border-radius: 8px;
-				padding: 0.8rem 1rem;
-				margin-top: 0.5rem;
-				color: #d7e1e5;
-			}
-			details code {
-				font-family: "Courier Prime", monospace;
-				background: #0003;
-				padding: 0 0.3em;
-				border-radius: 3px;
-			}
+
+			/* ----- kertas ----- */
 			main {
-				padding: 1.2rem 0.5rem 4rem;
-				overflow-x: auto;
-				transition: margin 0.3s ease;
+				flex: 1;
+				container-type: inline-size;
+				padding: 28px 20px 8px;
 			}
 			.paper {
 				position: relative;
 				margin: 0 auto;
 				width: 85ch;
-				transition:
-					background 0.3s,
-					color 0.3s;
-				min-height: 11in;
+				max-width: 100%;
+				min-height: 66em;
 				background: var(--paper);
 				color: var(--ink);
-				padding: 1in 10ch 1in 15ch;
+				padding: 6em 10ch 6em 15ch;
 				font:
 					12pt/1 "Courier Prime",
 					Courier,
 					monospace;
-				box-shadow: 0 8px 30px #0006;
+				font-size: 12pt;
+				font-size: min(12pt, calc(100cqw / 51));
+				border: 1px solid var(--line);
+				border-radius: 24px;
+				box-shadow:
+					0 1px 2px rgba(31, 42, 48, 0.06),
+					0 14px 36px rgba(31, 42, 48, 0.08);
+				transition:
+					background 0.3s,
+					color 0.3s;
 			}
 			#ed {
 				outline: none;
-				min-height: 9in;
+				min-height: 54em;
 				caret-color: var(--acc);
 			}
 			#ed p {
@@ -209,13 +332,357 @@
 				content: attr(data-ph);
 				color: #b4b9bc;
 			}
-			dialog {
-				background: var(--bar);
-				color: var(--bar-ink);
-				border: 1px solid #3b4e5a;
+			footer {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 6px 18px;
+				padding: 14px 28px 22px;
+				font-size: 12px;
+				color: var(--mute);
+				transition: opacity 0.35s;
+			}
+			#chip {
+				position: absolute;
+				left: 1.2ch;
+				top: 0;
+				padding-left: 0.6rem;
+				border-left: 2px solid var(--acc);
+				font:
+					600 11px/12pt "Public Sans",
+					sans-serif;
+				color: var(--mute);
+				white-space: nowrap;
+				transition: transform 0.18s ease;
+				pointer-events: none;
+			}
+			#chip[hidden] {
+				display: none;
+			}
+			.focus #ed p {
+				opacity: 0.25;
+			}
+			.focus #ed p.cur {
+				opacity: 1;
+			}
+			.focus.typing header {
+				opacity: 0;
+				pointer-events: none;
+			}
+			.focus.typing footer {
+				opacity: 0;
+			}
+
+			/* ----- daftar proyek & adegan (sidebar) ----- */
+			#proj h2 {
+				margin: 0 0 0.4rem;
+				padding: 0 8px;
+				font-size: 12px;
+				letter-spacing: 0.07em;
+				text-transform: uppercase;
+				color: var(--mute);
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+			#proj h2 button,
+			#proj .ph button {
+				padding: 0.1rem 0.5rem;
+				font-size: 12px;
+			}
+			#proj .ph {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.3rem;
+				align-items: center;
+				margin: 0.9rem 0 0.2rem;
+				padding: 0 8px;
+			}
+			#proj .ph b {
+				flex: 1 1 100%;
+				font-size: 14px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			#proj .ph small {
+				flex: 1;
+				color: var(--mute);
+			}
+			#proj ul {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			#proj .rw {
+				display: flex;
+				align-items: center;
 				border-radius: 10px;
-				padding: 1.1rem 1.2rem;
+				color: var(--mute);
+			}
+			#proj .rw[data-cur] {
+				background: var(--card);
+				color: var(--text);
+				font-weight: 600;
+				box-shadow:
+					var(--cardsh),
+					0 0 0 1px var(--line);
+			}
+			#proj .sc {
+				flex: 1;
+				min-width: 0;
+				text-align: left;
+				background: none;
+				border: 0;
+				padding: 8px 4px 8px 12px;
+				color: inherit;
+				font-size: 14px;
+				font-weight: inherit;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			#proj .rm {
+				flex: 0 0 auto;
+				width: 30px;
+				height: 30px;
+				margin-right: 4px;
+				display: grid;
+				place-items: center;
+				padding: 0;
+				border: 0;
+				border-radius: 8px;
+				background: transparent;
+				color: var(--mute);
+			}
+			#proj .rm:hover {
+				background: #fdeaea;
+				color: var(--danger);
+			}
+			#proj .em {
+				display: block;
+				color: var(--mute);
+				margin: 0.2rem 8px;
+				font-size: 12px;
+			}
+			#proj select {
+				width: 100%;
+				margin: 0.2rem 0 0.3rem;
+			}
+			#navwrap {
+				display: none;
+			}
+			body.nav #navwrap {
+				display: block;
+			}
+			#nav {
+				max-height: 38vh;
+				overflow: auto;
+			}
+			#nav button {
+				display: block;
+				width: 100%;
+				text-align: left;
+				margin: 0 0 2px;
+				background: none;
+				border: 0;
+				border-left: 3px solid transparent;
+				border-radius: 0 6px 6px 0;
+				padding: 0.4rem 0.6rem;
+				color: var(--mute);
+				font:
+					12px "Courier Prime",
+					monospace;
+				text-transform: uppercase;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			#nav button b {
+				display: inline-block;
+				width: 2em;
+				color: var(--acct);
+			}
+			#nav button[data-active] {
+				border-left-color: var(--acc);
+				background: var(--sel);
+				color: var(--text);
+			}
+			#nav p {
+				color: var(--mute);
+				margin: 0.4rem 8px;
+			}
+
+			/* ----- panel alat (kanan) ----- */
+			.tbar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				min-height: 72px;
+				padding: 12px 24px;
+				border-bottom: 1px solid var(--line);
+			}
+			.tbody {
+				display: flex;
+				flex-direction: column;
+				padding: 24px;
+			}
+			.tt {
+				margin-bottom: 14px;
+				font-size: 17px;
+				font-weight: 500;
+			}
+			#name {
+				width: 100%;
+			}
+			.kinds {
+				display: grid;
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+				gap: 14px 8px;
+			}
+			.kind,
+			.tool {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 6px;
+				padding: 0;
+				border: 0;
+				background: transparent;
+				font-size: 12px;
+				color: var(--mute);
+			}
+			.kind:hover,
+			.tool:hover {
+				background: transparent;
+			}
+			.kind i,
+			.tool .ci {
+				width: 52px;
+				height: 52px;
+				display: grid;
+				place-items: center;
+				border-radius: 50%;
+				border: 1px solid var(--line2);
+				background: var(--card);
+				color: var(--text);
+				box-shadow: var(--cardsh);
+			}
+			.kind i {
+				font:
+					700 14px "Courier Prime",
+					monospace;
+			}
+			.kind:hover i,
+			.tool:hover .ci {
+				background: var(--sel);
+			}
+			.kind[aria-pressed="true"] i {
+				background: var(--acc);
+				border-color: var(--acc);
+				color: var(--acc-ink);
+			}
+			.row {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				padding: 6px 0;
+			}
+			.sw {
+				position: relative;
+				flex: 0 0 auto;
+				width: 40px;
+				height: 24px;
+				padding: 0;
+				border: 0;
+				border-radius: 999px;
+				background: #bcc6cb;
+				appearance: none;
+				-webkit-appearance: none;
+			}
+			.sw:hover {
+				background: #bcc6cb;
+			}
+			.sw::after {
+				content: "";
+				position: absolute;
+				top: 2px;
+				left: 2px;
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				background: #fff;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+				transition: transform 0.15s;
+			}
+			.sw[aria-pressed="true"],
+			.sw:checked,
+			.sw[aria-pressed="true"]:hover,
+			.sw:checked:hover {
+				background: var(--acc);
+			}
+			.sw[aria-pressed="true"]::after,
+			.sw:checked::after {
+				transform: translateX(16px);
+			}
+			.tools {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 14px 12px;
+			}
+			.tool {
+				width: 62px;
+			}
+			.tool.danger {
+				color: var(--danger);
+			}
+			.tool.danger .ci {
+				background: #fff5f5;
+				border-color: #f0cfcf;
+				color: var(--danger);
+			}
+			.dark .tool.danger,
+			.dark .tool.danger .ci {
+				color: #ff8a80;
+			}
+			.dark .tool.danger .ci {
+				background: #3a2326;
+				border-color: #5a3338;
+			}
+
+			/* ----- dialog, saran, bantuan ----- */
+			details {
+				max-width: 46rem;
+				margin: 0.8rem auto 1rem;
+				padding: 0 1rem;
+			}
+			details summary {
+				cursor: pointer;
+				color: var(--mute);
+			}
+			details div {
+				background: var(--card);
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				padding: 0.8rem 1rem;
+				margin-top: 0.5rem;
+				color: var(--text);
+			}
+			details code {
+				font-family: "Courier Prime", monospace;
+				background: var(--sel);
+				padding: 0 0.3em;
+				border-radius: 3px;
+			}
+			dialog {
+				background: var(--card);
+				color: var(--text);
+				border: 1px solid var(--line2);
+				border-radius: 20px;
+				padding: 1.4rem 1.5rem;
 				max-width: 26rem;
+				box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 			}
 			dialog::backdrop {
 				background: #000a;
@@ -224,7 +691,7 @@
 				margin: 0;
 			}
 			dialog small {
-				color: #9fb0b8;
+				color: var(--mute);
 			}
 			dialog div {
 				display: flex;
@@ -246,16 +713,46 @@
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
+			.dico {
+				display: grid;
+				place-items: center;
+				width: 46px;
+				height: 46px;
+				margin-bottom: 14px;
+				border-radius: 50%;
+				background: #fdeaea;
+				color: var(--danger);
+			}
+			dialog .dtxt {
+				margin-top: 8px;
+				color: var(--mute);
+				line-height: 1.5;
+			}
+			dialog .dtxt b {
+				color: var(--text);
+			}
+			dialog button.danger {
+				background: var(--danger);
+				border-color: var(--danger);
+				color: #fff;
+				font-weight: 600;
+			}
+			dialog button.danger:hover {
+				background: #a93226;
+			}
+			select option {
+				background: var(--card);
+			}
 			#sug {
 				position: fixed;
 				z-index: 30;
 				min-width: 11rem;
 				max-width: min(24rem, 92vw);
-				background: var(--bar);
-				border: 1px solid #3b4e5a;
-				border-radius: 8px;
+				background: var(--card);
+				border: 1px solid var(--line2);
+				border-radius: 12px;
 				padding: 0.25rem;
-				box-shadow: 0 8px 24px #0008;
+				box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
 			}
 			#sug[hidden] {
 				display: none;
@@ -266,119 +763,25 @@
 				text-align: left;
 				background: none;
 				border: 0;
-				border-radius: 5px;
+				border-radius: 8px;
 				padding: 0.3rem 0.6rem;
 				font:
 					13px/1.2 "Courier Prime",
 					monospace;
-				color: #dfe8ec;
+				color: var(--text);
 				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
 			}
 			#sug button[aria-selected="true"] {
 				background: var(--acc);
-				color: #07211d;
+				color: var(--acc-ink);
 			}
 			#sug small {
 				display: block;
 				padding: 0.25rem 0.6rem 0;
-				color: #8fa2ab;
+				color: var(--mute);
 				font-size: 11px;
-			}
-			#proj {
-				position: fixed;
-				top: var(--hh, 3.4rem);
-				bottom: 2rem;
-				right: 0;
-				width: 16rem;
-				padding: 0.8rem 0.6rem;
-				overflow: auto;
-				background: var(--bar);
-				transform: translateX(100%);
-				transition: transform 0.3s ease;
-				z-index: 4;
-			}
-			body.proj #proj {
-				transform: none;
-			}
-			body.proj main {
-				margin-right: 16rem;
-			}
-			#proj h2 {
-				margin: 0 0 0.4rem;
-				font-size: 12px;
-				letter-spacing: 0.06em;
-				text-transform: uppercase;
-				color: #9fb0b8;
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-			}
-			#proj h2 button,
-			#proj .ph button {
-				padding: 0.1rem 0.5rem;
-				font-size: 12px;
-			}
-			#proj .ph {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.3rem;
-				align-items: center;
-				margin: 0.9rem 0 0.2rem;
-			}
-			#proj .ph b {
-				flex: 1 1 100%;
-				font-size: 14px;
-				overflow: hidden;
-				text-overflow: ellipsis;
-			}
-			#proj .ph small {
-				flex: 1;
-				color: #8fa2ab;
-			}
-			#proj .sc {
-				display: block;
-				width: 100%;
-				text-align: left;
-				background: none;
-				border: 0;
-				border-left: 3px solid transparent;
-				border-radius: 0 6px 6px 0;
-				padding: 0.35rem 0.6rem;
-				color: #c5d2d8;
-				font-size: 13px;
-				white-space: nowrap;
-				overflow: hidden;
-				text-overflow: ellipsis;
-			}
-			#proj .sc[aria-current="true"] {
-				border-left-color: var(--acc);
-				background: #2a3a45;
-				color: #fff;
-			}
-			#proj ul {
-				list-style: none;
-				margin: 0;
-				padding: 0;
-			}
-			#proj .em {
-				display: block;
-				color: #8fa2ab;
-				margin: 0.2rem 0;
-				font-size: 12px;
-			}
-			#proj select {
-				width: 100%;
-				margin: 0.2rem 0 0.3rem;
-			}
-			@media (max-width: 1300px) {
-				body.proj main {
-					margin-right: 0;
-				}
-				#proj {
-					box-shadow: -4px 0 20px #0008;
-				}
 			}
 			body.drop::after {
 				content: "Lepas file .txt untuk mengimpor";
@@ -396,148 +799,31 @@
 				z-index: 20;
 				pointer-events: none;
 			}
-			button[aria-pressed="true"] {
-				background: var(--acc);
-				border-color: var(--acc);
-				color: #07211d;
-				font-weight: 600;
-			}
-			.dark {
-				--desk: #11171b;
-				--paper: #222c33;
-				--ink: #e7e5de;
-			}
-			.dark .paper {
-				box-shadow: 0 8px 30px #000a;
-			}
-			.focus #ed p {
-				opacity: 0.25;
-			}
-			.focus #ed p.cur {
-				opacity: 1;
-			}
-			.focus.typing header {
-				transform: translateY(-100%);
-				opacity: 0;
-				pointer-events: none;
-			}
-			.focus.typing footer {
-				opacity: 0;
-			}
-			#chip {
-				position: absolute;
-				left: 1.2ch;
-				top: 0;
-				padding-left: 0.6rem;
-				border-left: 2px solid var(--acc);
-				font:
-					600 11px/12pt "Public Sans",
-					sans-serif;
-				color: #6f8089;
-				white-space: nowrap;
-				transition: transform 0.18s ease;
-				pointer-events: none;
-			}
-			#chip[hidden] {
-				display: none;
-			}
-			#nav {
-				position: fixed;
-				top: var(--hh, 3.4rem);
-				bottom: 2rem;
-				left: 0;
-				width: 15rem;
-				padding: 0.8rem 0.6rem;
-				overflow: auto;
-				background: var(--bar);
-				transform: translateX(-100%);
-				transition: transform 0.3s ease;
-				z-index: 4;
-			}
-			body.nav #nav {
-				transform: none;
-			}
-			body.nav main {
-				margin-left: 15rem;
-			}
-			#nav button {
-				display: block;
-				width: 100%;
-				text-align: left;
-				margin: 0 0 0.3rem;
-				background: none;
-				border: 0;
-				border-left: 3px solid transparent;
-				border-radius: 0 6px 6px 0;
-				padding: 0.4rem 0.6rem;
-				color: #c5d2d8;
-				font:
-					12px "Courier Prime",
-					monospace;
-				text-transform: uppercase;
-				white-space: nowrap;
-				overflow: hidden;
-				text-overflow: ellipsis;
-			}
-			#nav button b {
-				display: inline-block;
-				width: 2em;
-				color: var(--acc);
-			}
-			#nav button[data-active] {
-				border-left-color: var(--acc);
-				background: #2a3a45;
-				color: #fff;
-			}
-			#nav p {
-				color: #7f929b;
-				margin: 0.4rem;
-			}
+
 			@media (max-width: 1100px) {
-				body.nav main {
-					margin-left: 0;
+				#side,
+				#tools {
+					flex: 1 1 100%;
+					border: 0;
 				}
-				#nav {
-					box-shadow: 4px 0 20px #0008;
+				.stick {
+					position: static;
+					max-height: none;
 				}
 			}
 			@media (max-width: 820px) {
+				body {
+					padding: 12px;
+				}
+				.app {
+					border-radius: 20px;
+				}
 				#chip {
 					display: none;
 				}
-			}
-			@media (prefers-reduced-motion: reduce) {
-				* {
-					transition: none !important;
+				main {
+					padding: 16px 10px 8px;
 				}
-			}
-			footer {
-				align-items: center;
-			}
-			footer select {
-				padding: 0.15rem 0.4rem;
-				font-size: 12px;
-			}
-			footer label {
-				gap: 0.5rem;
-			}
-			select option {
-				background: #2a3a45;
-			}
-			footer {
-				transition: opacity 0.35s;
-				position: fixed;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				padding: 0.4rem 1rem;
-				background: var(--bar);
-				color: #9fb0b8;
-				display: flex;
-				gap: 1.2rem;
-				font-size: 12px;
-			}
-			@media (max-width: 820px) {
 				.paper {
 					width: 100%;
 					font-size: 14px;
@@ -554,22 +840,34 @@
 					margin: 0 4ch 0 6ch;
 				}
 			}
+			@media (prefers-reduced-motion: reduce) {
+				* {
+					transition: none !important;
+				}
+			}
 			@media print {
 				@page {
 					size: letter;
 					margin: 1in 1in 1in 1.5in;
 				}
 				html,
-				body,
-				main {
+				body {
 					background: #fff;
+					padding: 0;
 				}
+				.app {
+					display: block;
+					background: #fff;
+					box-shadow: none;
+					border-radius: 0;
+					min-height: 0;
+				}
+				#side,
+				#tools,
 				header,
 				footer,
 				details,
-				#chip,
-				#nav,
-				#proj {
+				#chip {
 					display: none !important;
 				}
 				main {
@@ -578,8 +876,15 @@
 				}
 				.paper {
 					width: auto;
+					max-width: none;
 					padding: 0;
+					border: 0;
+					border-radius: 0;
 					box-shadow: none;
+					min-height: 0;
+					font-size: 12pt;
+				}
+				#ed {
 					min-height: 0;
 				}
 				#ed[data-empty] p::before {
@@ -592,112 +897,444 @@
 				#ed p {
 					opacity: 1 !important;
 				}
-				main {
-					margin: 0 !important;
-				}
 			}
 		</style>
 	</head>
 	<body>
-		<header>
-			<h1>NASKAH <small>fokus pada cerita, bukan format</small></h1>
-			<button
-				id="new"
-				title="Mulai naskah kosong; naskah ini tetap tersimpan"
-			>
-				+ Naskah baru
-			</button>
-			<button
-				id="login"
-				hidden
-				title="Masuk agar naskah tersimpan di akun"
-			>
-				Masuk
-			</button>
-			<button
-				id="invite"
-				hidden
-				title="Undang kolaborator ke script ini (untuk script tanpa proyek; di dalam proyek, undang lewat panel Proyek)"
-			>
-				Undang script
-			</button>
-			<input
-				id="sname"
-				type="text"
-				placeholder="Nama script"
-				aria-label="Nama script"
-				title="Beri nama script ini. Kosongkan untuk memakai baris pertama naskah sebagai nama."
-				maxlength="60"
-				style="width: 11rem"
-			/>
-			<label
-				title="Ubah jenis baris yang sedang dipilih (Alt+1 sampai Alt+6). Teks ikut diformat otomatis."
-				>Format baris
-				<select id="kind" aria-label="Format baris">
-					<option value="scene">Judul adegan (Scene)</option>
-					<option value="action">Aksi (Action)</option>
-					<option value="character">Karakter (Character)</option>
-					<option value="dialogue">Dialog (Dialogue)</option>
-					<option value="paren">Parenthetical</option>
-					<option value="transition">Transisi (Transition)</option>
-					<option value="auto">Otomatis (deteksi ulang)</option>
-				</select></label
-			>
-			<button id="undo" title="Urungkan (Ctrl+Z)" disabled>
-				↶ Urungkan
-			</button>
-			<button id="redo" title="Ulangi (Ctrl+Y / Ctrl+Shift+Z)" disabled>
-				↷ Ulangi
-			</button>
-			<span id="peers"></span>
-			<input
-				id="name"
-				type="text"
-				placeholder="Nama kamu"
-				aria-label="Nama kamu"
-				maxlength="24"
-			/>
-			<label
-				><input id="cont" type="checkbox" checked /> CONT'D
-				otomatis</label
-			>
-			<label
-				title="CONT'D tidak dipasang bila aksi di antara dialog lebih dari ini"
-				>maks. aksi
-				<input id="max" type="number" min="0" max="20" value="3"
-			/></label>
-			<button id="bnav" aria-pressed="false">Adegan</button>
-			<button
-				id="bproj"
-				aria-pressed="false"
-				title="Proyek dan script-nya"
-			>
-				Proyek
-			</button>
-			<button
-				id="bfocus"
-				aria-pressed="false"
-				title="Redupkan semua baris kecuali yang sedang ditulis"
-			>
-				Fokus
-			</button>
-			<button id="btheme" aria-pressed="false">Gelap</button>
-			<button id="share">Salin tautan kolaborasi</button>
-			<button
-				id="imp"
-				title="Impor naskah dari file .txt atau .fountain (bisa juga seret file ke halaman)"
-			>
-				Impor .txt
-			</button>
-			<input
-				id="file"
-				type="file"
-				accept=".txt,.fountain,text/plain"
-				hidden
-			/>
-			<button id="exp">Ekspor .fountain</button>
-			<button id="prt">Cetak / PDF</button>
-		</header>
+		<div class="app">
+			<aside id="side">
+				<div class="stick">
+					<div class="brand">
+						<svg
+							width="26"
+							height="26"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path
+								d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9z"
+							/>
+							<path d="M4 9l2-4h4L8 9M12 9l2-4h4l-2 4" />
+						</svg>
+						Naskah
+					</div>
+					<div id="proj" aria-label="Proyek"></div>
+					<button
+						id="new"
+						title="Mulai naskah kosong; naskah ini tetap tersimpan"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							aria-hidden="true"
+						>
+							<path d="M12 5v14M5 12h14" />
+						</svg>
+						Naskah baru
+					</button>
+					<div id="navwrap">
+						<div class="div"></div>
+						<div class="sech">Adegan</div>
+						<div id="nav" aria-label="Daftar adegan"></div>
+					</div>
+				</div>
+			</aside>
+
+			<div class="center">
+				<header>
+					<div class="crumb">
+						<span id="crumb">Tanpa proyek</span>
+						<span aria-hidden="true">/</span>
+						<input
+							id="sname"
+							type="text"
+							placeholder="Nama script"
+							aria-label="Nama script"
+							title="Beri nama script ini. Kosongkan untuk memakai baris pertama naskah sebagai nama."
+							maxlength="60"
+						/>
+					</div>
+					<div class="ur">
+						<button
+							id="undo"
+							title="Urungkan (Ctrl+Z)"
+							aria-label="Urungkan"
+							disabled
+						>
+							<svg
+								width="18"
+								height="18"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.9"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M9 14L4 9l5-5" />
+								<path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+							</svg>
+						</button>
+						<button
+							id="redo"
+							title="Ulangi (Ctrl+Y / Ctrl+Shift+Z)"
+							aria-label="Ulangi"
+							disabled
+						>
+							<svg
+								width="18"
+								height="18"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.9"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M15 14l5-5-5-5" />
+								<path d="M20 9H10a6 6 0 0 0 0 12h3" />
+							</svg>
+						</button>
+					</div>
+				</header>
+				<main>
+					<div class="paper">
+						<div id="chip" hidden></div>
+						<div
+							id="ed"
+							contenteditable="true"
+							spellcheck="true"
+							role="textbox"
+							aria-multiline="true"
+							aria-label="Naskah"
+						></div>
+					</div>
+				</main>
+				<footer>
+					<span id="st"></span><span id="sync"></span
+					><span id="cl"></span>
+				</footer>
+			</div>
+
+			<aside id="tools">
+				<div class="stick">
+					<div class="tbar">
+						<span id="peers"></span>
+						<button
+							id="login"
+							hidden
+							title="Masuk agar naskah tersimpan di akun"
+						>
+							Masuk
+						</button>
+					</div>
+					<div class="tbody">
+						<input
+							id="name"
+							type="text"
+							placeholder="Nama kamu"
+							aria-label="Nama kamu"
+							maxlength="24"
+						/>
+
+						<div style="margin-top: 22px">
+							<div
+								class="tt"
+								title="Ubah jenis baris yang sedang dipilih (Alt+1 sampai Alt+6). Teks ikut diformat otomatis."
+							>
+								Format baris
+							</div>
+							<div class="kinds" id="kinds">
+								<button
+									class="kind"
+									data-k="scene"
+									aria-pressed="false"
+								>
+									<i>INT</i>Adegan
+								</button>
+								<button
+									class="kind"
+									data-k="action"
+									aria-pressed="false"
+								>
+									<i>¶</i>Aksi
+								</button>
+								<button
+									class="kind"
+									data-k="character"
+									aria-pressed="false"
+								>
+									<i>ABC</i>Karakter
+								</button>
+								<button
+									class="kind"
+									data-k="dialogue"
+									aria-pressed="false"
+								>
+									<i>“ ”</i>Dialog
+								</button>
+								<button
+									class="kind"
+									data-k="paren"
+									aria-pressed="false"
+								>
+									<i>( )</i>Paren.
+								</button>
+								<button
+									class="kind"
+									data-k="transition"
+									aria-pressed="false"
+								>
+									<i>CUT</i>Transisi
+								</button>
+							</div>
+							<select id="kind" aria-label="Format baris" hidden>
+								<option value="scene">
+									Judul adegan (Scene)
+								</option>
+								<option value="action">Aksi (Action)</option>
+								<option value="character">
+									Karakter (Character)
+								</option>
+								<option value="dialogue">
+									Dialog (Dialogue)
+								</option>
+								<option value="paren">Parenthetical</option>
+								<option value="transition">
+									Transisi (Transition)
+								</option>
+								<option value="auto">
+									Otomatis (deteksi ulang)
+								</option>
+							</select>
+						</div>
+
+						<div class="div"></div>
+
+						<div>
+							<div class="tt">Tampilan</div>
+							<div class="row">
+								<label for="cont">CONT'D otomatis</label>
+								<input
+									id="cont"
+									class="sw"
+									type="checkbox"
+									checked
+								/>
+							</div>
+							<div class="row">
+								<span>Navigator adegan</span>
+								<button
+									id="bnav"
+									class="sw"
+									aria-pressed="false"
+									aria-label="Navigator adegan"
+								></button>
+							</div>
+							<div class="row">
+								<span>Mode fokus</span>
+								<button
+									id="bfocus"
+									class="sw"
+									aria-pressed="false"
+									aria-label="Mode fokus"
+									title="Redupkan semua baris kecuali yang sedang ditulis"
+								></button>
+							</div>
+							<div class="row">
+								<span>Mode gelap</span>
+								<button
+									id="btheme"
+									class="sw"
+									aria-pressed="false"
+									aria-label="Mode gelap"
+								></button>
+							</div>
+							<div class="row">
+								<label
+									for="max"
+									title="CONT'D tidak dipasang bila aksi di antara dialog lebih dari ini"
+									>Maks. aksi</label
+								>
+								<input
+									id="max"
+									type="number"
+									min="0"
+									max="20"
+									value="3"
+								/>
+							</div>
+						</div>
+
+						<div class="div"></div>
+
+						<div>
+							<div class="tt">Lainnya</div>
+							<div class="tools">
+								<button
+									id="imp"
+									class="tool"
+									title="Impor naskah dari file .txt atau .fountain (bisa juga seret file ke halaman)"
+								>
+									<span class="ci"
+										><svg
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path
+												d="M12 16V4M7 9l5-5 5 5M5 20h14"
+											/></svg
+									></span>
+									Impor
+								</button>
+								<input
+									id="file"
+									type="file"
+									accept=".txt,.fountain,text/plain"
+									hidden
+								/>
+								<button
+									id="exp"
+									class="tool"
+									title="Ekspor sebagai file .fountain"
+								>
+									<span class="ci"
+										><svg
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path
+												d="M12 4v12M7 11l5 5 5-5M5 20h14"
+											/></svg
+									></span>
+									Ekspor
+								</button>
+								<button
+									id="prt"
+									class="tool"
+									title="Cetak / simpan sebagai PDF"
+								>
+									<span class="ci"
+										><svg
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path
+												d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"
+											/></svg
+									></span>
+									Cetak
+								</button>
+								<button
+									id="share"
+									class="tool"
+									title="Salin tautan kolaborasi"
+								>
+									<span class="ci"
+										><svg
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path
+												d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"
+											/></svg
+									></span>
+									<span id="slab">Tautan</span>
+								</button>
+								<button
+									id="invite"
+									class="tool"
+									hidden
+									title="Undang kolaborator ke script ini (untuk script tanpa proyek; di dalam proyek, undang lewat panel Proyek)"
+								>
+									<span class="ci"
+										><svg
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<circle cx="10" cy="8" r="3.5" />
+											<path
+												d="M3 20c0-3.5 3-6 7-6M18 9v6M15 12h6"
+											/></svg
+									></span>
+									Undang
+								</button>
+								<button
+									id="del"
+									class="tool danger"
+									title="Hapus script ini secara permanen"
+								>
+									<span class="ci"
+										><svg
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path
+												d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"
+											/></svg
+									></span>
+									Hapus
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</aside>
+		</div>
 		<details>
 			<summary>Cara kerja</summary>
 			<div>
@@ -733,16 +1370,17 @@
 						dihargai.
 					</li>
 					<li>
-						<b>Format manual</b>: pilih jenis baris lewat dropdown
-						<i>Format baris</i> di atas (atau Alt+1 s/d Alt+6:
-						adegan, aksi, karakter, dialog, parenthetical, transisi;
-						Alt+0 deteksi ulang). Teks diformat otomatis: adegan
-						jadi KAPITAL berawalan INT., karakter KAPITAL tanpa
-						tanda baca akhir, parenthetical diberi kurung, dialog
-						dibuat huruf biasa. Bisa untuk beberapa baris sekaligus.
+						<b>Format manual</b>: pilih jenis baris lewat tombol
+						<i>Format baris</i> di panel kanan (atau Alt+1 s/d
+						Alt+6: adegan, aksi, karakter, dialog, parenthetical,
+						transisi; Alt+0 deteksi ulang). Teks diformat otomatis:
+						adegan jadi KAPITAL berawalan INT., karakter KAPITAL
+						tanpa tanda baca akhir, parenthetical diberi kurung,
+						dialog dibuat huruf biasa. Bisa untuk beberapa baris
+						sekaligus.
 					</li>
 					<li>
-						<b>Proyek</b>: panel <i>Proyek</i> di kanan
+						<b>Proyek</b>: panel <i>Proyek</i> di kiri
 						mengelompokkan script per proyek (tiap proyek punya id
 						sendiri). <i>Undang</i> di proyek memberi kolaborator
 						akses ke <b>semua script</b> di proyek itu, termasuk
@@ -760,6 +1398,12 @@
 						atau lewat tautannya.
 					</li>
 					<li>
+						<b>Hapus script</b>: klik ikon tempat sampah di samping
+						nama script (daftar Proyek) atau tombol <i>Hapus</i> di
+						panel kanan. Penghapusan permanen dan hanya bisa
+						dilakukan pemilik script.
+					</li>
+					<li>
 						<b>Akun &amp; database</b>: klik <i>Masuk</i> (tautan
 						lewat email) agar naskah tersimpan di akun dan muncul di
 						semua perangkat. Pemilik bisa memakai
@@ -768,7 +1412,7 @@
 					</li>
 					<li>
 						<b>Urungkan / Ulangi</b>: Ctrl+Z, Ctrl+Y (atau
-						Ctrl+Shift+Z; Cmd di Mac), atau tombol di header.
+						Ctrl+Shift+Z; Cmd di Mac), atau tombol di atas naskah.
 						Riwayat maksimal 30 langkah dan hanya mencakup
 						perubahanmu sendiri, jadi tulisan kolaborator tidak ikut
 						terhapus.
@@ -799,24 +1443,6 @@
 				</ul>
 			</div>
 		</details>
-		<aside id="nav" aria-label="Daftar adegan"></aside>
-		<aside id="proj" aria-label="Proyek"></aside>
-		<main>
-			<div class="paper">
-				<div id="chip" hidden></div>
-				<div
-					id="ed"
-					contenteditable="true"
-					spellcheck="true"
-					role="textbox"
-					aria-multiline="true"
-					aria-label="Naskah"
-				></div>
-			</div>
-		</main>
-		<footer>
-			<span id="st"></span><span id="sync"></span><span id="cl"></span>
-		</footer>
 
 		<div id="sug" role="listbox" aria-label="Saran" hidden></div>
 		<dialog id="dlg">
@@ -870,6 +1496,36 @@
 				<div>
 					<button value="cancel">Tutup</button
 					><button id="asend" type="button">Kirim tautan</button>
+				</div>
+			</form>
+		</dialog>
+		<dialog id="ddlg">
+			<form method="dialog">
+				<span class="dico"
+					><svg
+						width="22"
+						height="22"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.8"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path
+							d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"
+						/></svg
+				></span>
+				<p><b>Hapus script ini?</b></p>
+				<p class="dtxt">
+					<b id="dname"></b> akan dihapus permanen beserta seluruh
+					isinya. Kolaborator yang diundang juga tidak bisa membukanya
+					lagi. Tindakan ini tidak bisa dibatalkan.
+				</p>
+				<div>
+					<button value="cancel">Batal</button
+					><button value="del" class="danger">Hapus script</button>
 				</div>
 			</form>
 		</dialog>
@@ -1219,14 +1875,11 @@
 			$("#share").onclick = async (e) => {
 				try {
 					await navigator.clipboard.writeText(location.href);
-					e.target.textContent = "Tautan tersalin ✓";
+					$("#slab").textContent = "Tersalin ✓";
 				} catch {
 					prompt("Salin tautan ini:", location.href);
 				}
-				setTimeout(
-					() => (e.target.textContent = "Salin tautan kolaborasi"),
-					1800,
-				);
+				setTimeout(() => ($("#slab").textContent = "Tautan"), 1800);
 			};
 			$("#prt").onclick = () => print();
 			$("#exp").onclick = () => {
@@ -1323,6 +1976,14 @@
 				selIdx = [Math.min(ia, ib), Math.max(ia, ib)];
 				const kk = p.className.split(" ")[0];
 				kindSel.value = kk === "blank" ? "action" : kk;
+				document
+					.querySelectorAll("#kinds .kind")
+					.forEach((b) =>
+						b.setAttribute(
+							"aria-pressed",
+							String(b.dataset.k === kindSel.value),
+						),
+					);
 				chip.textContent =
 					KL[p.className.split(" ")[0]] +
 					(p.hasAttribute("data-cont") ? " · CONT'D" : "");
@@ -1719,7 +2380,8 @@
 			/* ---------- Naskah baru & daftar naskah di perangkat ---------- */
 			const LK = "naskah:list",
 				ndlg = $("#ndlg");
-			let saveT;
+			let saveT,
+				deleting = false;
 			const readList = () => {
 				try {
 					return JSON.parse(ls.get(LK) || "[]");
@@ -1730,6 +2392,7 @@
 			function saveMeta() {
 				clearTimeout(saveT);
 				saveT = setTimeout(() => {
+					if (deleting) return;
 					const first = ytext
 						.toString()
 						.split("\n")
@@ -1816,6 +2479,7 @@
 
 			/* ---------- Supabase: akun + simpan ke database (opsional, lihat config.js) ---------- */
 			let cloudApi = null,
+				delCloud = null,
 				lastTitle = "";
 			const CFG = window.NASKAH_CONFIG || {};
 			const b64 = (u) => {
@@ -1846,6 +2510,21 @@
 					q = [],
 					ft = null;
 				btn.hidden = false;
+				delCloud = async (id) => {
+					const { data, error } = await sb
+						.from("scripts")
+						.delete()
+						.eq("id", id)
+						.select("id");
+					if (error) throw error;
+					if (data && data.length) return "ok";
+					const { data: ex } = await sb
+						.from("scripts")
+						.select("id")
+						.eq("id", id)
+						.maybeSingle();
+					return ex ? "notowner" : "ok"; // tidak ada di cloud = hanya ada di perangkat ini
+				};
 				status("belum masuk · tersimpan di browser ini");
 
 				async function flush() {
@@ -2382,6 +3061,8 @@
 				ls.set(LK, JSON.stringify(L.slice(0, 200)));
 				go(r);
 			}
+			const ICON_TRASH =
+				'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
 			function renderProj() {
 				const P = readProj(),
 					L = readList(),
@@ -2395,19 +3076,21 @@
 					(groups.get(P.map[r]) || loose).push([r, t]),
 				);
 				const item = ([r, t]) =>
-					`<li><button class="sc" data-r="${esc(r)}"${r === room ? ' aria-current="true"' : ""}>${esc(t)}</button></li>`;
+					`<li class="rw"${r === room ? " data-cur" : ""}><button class="sc" data-r="${esc(r)}"${r === room ? ' aria-current="true"' : ""}>${esc(t)}</button><button class="rm" data-d="${esc(r)}" title="Hapus script" aria-label="Hapus script">${ICON_TRASH}</button></li>`;
 				const list = (a) =>
 					a.length
 						? `<ul>${a.map(item).join("")}</ul>`
 						: '<small class="em">Belum ada script</small>';
 				const cp = P.map[room] || "";
+				const pn = P.projects.find((p) => p.id === cp);
+				$("#crumb").textContent = pn ? pn.name : "Tanpa proyek";
 				const head = `<h2>Proyek <button data-a="newp">+ Proyek</button></h2><label class="em">Naskah ini ada di proyek<select id="pmove"><option value="">(tanpa proyek)</option>${P.projects.map((p) => `<option value="${esc(p.id)}"${p.id === cp ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label>`;
 				const body =
 					P.projects
 						.map((p) => {
 							const a = groups.get(p.id);
 							const mine = p.mine !== false;
-							return `<section><div class="ph"><b>${esc(p.name)}</b><small>#${esc(p.id)} · ${a.length} script${mine ? "" : " · dibagikan"}</small><button data-a="adds" data-p="${esc(p.id)}">+ Script</button>${mine ? `<button data-a="inv" data-p="${esc(p.id)}" title="Undang kolaborator ke proyek ini">Undang</button><button data-a="ren" data-p="${esc(p.id)}" title="Ganti nama">✎</button><button data-a="del" data-p="${esc(p.id)}" title="Hapus proyek">🗑</button>` : ""}</div>${list(a)}</section>`;
+							return `<section><div class="ph"><b>${esc(p.name)}</b><small>#${esc(p.id)} · ${a.length} script${mine ? "" : " · dibagikan"}</small><button data-a="adds" data-p="${esc(p.id)}">+ Script</button>${mine ? `<button data-a="inv" data-p="${esc(p.id)}" title="Undang kolaborator ke proyek ini">Undang</button><button data-a="ren" data-p="${esc(p.id)}" title="Ganti nama">✎</button><button data-a="del" data-p="${esc(p.id)}" title="Hapus proyek" aria-label="Hapus proyek">${ICON_TRASH}</button>` : ""}</div>${list(a)}</section>`;
 						})
 						.join("") +
 					(loose.length
@@ -2421,6 +3104,10 @@
 			proj.addEventListener("click", async (e) => {
 				const b = e.target.closest("button");
 				if (!b) return;
+				if (b.dataset.d) {
+					deleteScript(b.dataset.d);
+					return;
+				}
 				if (b.dataset.r) {
 					if (b.dataset.r !== room) go(b.dataset.r);
 					return;
@@ -2572,8 +3259,64 @@
 					renderProj();
 				} catch {}
 			}
-			tog("#bproj", B, "proj", "naskah:proj-open", innerWidth > 1300);
+
 			renderProj();
+
+			/* ---------- Format baris lewat tombol + hapus script (permanen) ---------- */
+			$("#kinds").addEventListener("mousedown", (e) =>
+				e.preventDefault(),
+			);
+			$("#kinds").onclick = (e) => {
+				const b = e.target.closest(".kind");
+				if (!b) return;
+				kindSel.value = b.dataset.k;
+				applyKind(b.dataset.k);
+			};
+			const ddlg = $("#ddlg");
+			async function deleteScript(id) {
+				const t = readList().find((x) => x.room === id);
+				$("#dname").textContent = (t && t.title) || "Script ini";
+				ddlg.returnValue = "cancel";
+				await new Promise((r) => {
+					ddlg.addEventListener("close", r, { once: true });
+					ddlg.showModal();
+				});
+				if (ddlg.returnValue !== "del") return;
+				if (delCloud) {
+					try {
+						if ((await delCloud(id)) === "notowner") {
+							alert(
+								"Hanya pemilik script yang bisa menghapusnya.",
+							);
+							return;
+						}
+					} catch (e) {
+						flash("Gagal menghapus: " + e.message);
+						return;
+					}
+				}
+				if (id === room) deleting = true;
+				clearTimeout(saveT);
+				ls.set(
+					LK,
+					JSON.stringify(readList().filter((x) => x.room !== id)),
+				);
+				const P = readProj();
+				delete P.map[id];
+				writeProj(P);
+				try {
+					if (id === room) await idb.clearData();
+					else indexedDB.deleteDatabase("naskah-" + id);
+				} catch {}
+				if (id === room) {
+					const nx = readList()[0];
+					go(nx ? nx.room : rnd());
+				} else {
+					renderProj();
+					flash("Script dihapus");
+				}
+			}
+			$("#del").onclick = () => deleteScript(room);
 
 			let curEl = null;
 			render();
