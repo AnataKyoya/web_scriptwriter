@@ -384,16 +384,21 @@
 				position: absolute;
 				z-index: 1;
 				left: 1.2ch;
-				top: 0;
+				/* top: 0; */
 				padding-left: 0.6rem;
 				border-left: 2px solid var(--acc);
 				font:
-					600 11px/12pt "Public Sans",
+					600 14px/12pt "Public Sans",
 					sans-serif;
 				color: var(--mute);
 				white-space: nowrap;
 				transition: transform 0.18s ease;
 				pointer-events: none;
+				background-color: var(--desk);
+				width: 90%;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
 			}
 			#chip[hidden] {
 				display: none;
@@ -2507,7 +2512,8 @@
 				chip.textContent =
 					KL[p.className.split(" ")[0]] +
 					(p.hasAttribute("data-cont") ? " · CONT'D" : "");
-				chip.style.transform = `translateY(${p.offsetTop}px)`;
+				chip.style.transform = `translateY(${p.offsetTop - 4.8}px)`;
+				chip.style.height = ` ${p.offsetHeight + 9}px`;
 				chip.hidden = false;
 				const i = [...ed.children].indexOf(p);
 				let act = null;
