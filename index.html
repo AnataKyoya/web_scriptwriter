@@ -66,7 +66,7 @@
 					sans-serif;
 			}
 			body {
-				padding: 24px;
+				padding: 0;
 			}
 			button,
 			select,
@@ -113,12 +113,10 @@
 			.app {
 				display: flex;
 				flex-wrap: wrap;
-				min-height: calc(100vh - 48px);
+				min-height: 100vh;
 				background: var(--win);
-				border-radius: 28px;
-				box-shadow:
-					var(--shadow),
-					0 0 0 1px var(--line2);
+				border-radius: 0;
+				box-shadow: none;
 				overflow: clip;
 			}
 			#side {
@@ -253,48 +251,74 @@
 				font-size: 13px;
 			}
 
-			/* ----- kertas ----- */
+			/* ----- kertas: lembar terpisah (A4 default), hanya area ini yang scroll ----- */
 			main {
 				flex: 1;
 				container-type: inline-size;
-				padding: 28px 20px 8px;
+				padding: 28px 20px 48px;
+				background: var(--desk);
 			}
 			.paper {
+				--pw: 49.61; /* lebar lembar dalam em (12pt) */
+				--ph: 70.16; /* tinggi lembar dalam em */
 				position: relative;
 				margin: 0 auto;
-				width: 85ch;
-				max-width: 100%;
-				min-height: 66em;
-				background: var(--paper);
+				width: calc(var(--pw) * 1em);
+				max-width: none;
+				min-height: calc(var(--ph) * 1em);
+				background: transparent;
 				color: var(--ink);
-				padding: 6em 10ch 6em 15ch;
+				padding: 6em 6em 6em 9em;
 				font:
 					12pt/1 "Courier Prime",
 					Courier,
 					monospace;
 				font-size: 12pt;
-				font-size: min(12pt, calc(100cqw / 51));
+				font-size: min(12pt, calc(100cqw / var(--pw)));
+			}
+			#pages {
+				position: absolute;
+				inset: 0;
+				z-index: 0;
+				pointer-events: none;
+			}
+			#pages .pg {
+				position: absolute;
+				left: 0;
+				right: 0;
+				background: var(--paper);
 				border: 1px solid var(--line);
-				border-radius: 24px;
+				border-radius: 2px;
 				box-shadow:
-					0 1px 2px rgba(31, 42, 48, 0.06),
-					0 14px 36px rgba(31, 42, 48, 0.08);
-				transition:
-					background 0.3s,
-					color 0.3s;
+					0 1px 2px rgba(31, 42, 48, 0.08),
+					0 10px 28px rgba(31, 42, 48, 0.1);
+				transition: background 0.3s;
+			}
+			#pages .pn {
+				position: absolute;
+				top: 3em;
+				right: 6em;
+				color: var(--ink);
+			}
+			#pages .mk {
+				position: absolute;
+				left: calc(9em + 22ch);
+				white-space: nowrap;
+				text-transform: uppercase;
+				color: var(--ink);
 			}
 			#ed {
+				position: relative;
+				z-index: 1;
 				outline: none;
-				min-height: 54em;
+				min-height: 58em;
 				caret-color: var(--acc);
 			}
 			#ed p {
 				margin: 0;
 				white-space: pre-wrap;
 				word-break: break-word;
-				transition:
-					margin 0.2s ease,
-					opacity 0.3s ease;
+				transition: opacity 0.3s ease;
 			}
 			#ed p.scene {
 				margin-top: 2em;
@@ -325,6 +349,18 @@
 			#ed p:first-child {
 				margin-top: 0;
 			}
+			/* paginasi: paragraf yang dipindah ke lembar berikutnya */
+			#ed p[data-push] {
+				margin-top: calc(var(--mt) * 1em);
+			}
+			/* paginasi: paragraf yang terbelah di batas lembar (baris per baris) */
+			#ed p[data-brk]::before {
+				content: "";
+				float: left;
+				width: 100%;
+				height: calc(var(--bh) * 1em);
+				shape-outside: inset(calc(var(--bo) * 1em) 0 0 0);
+			}
 			#ed p[data-cont]::after {
 				content: " (CONT'D)";
 			}
@@ -344,6 +380,7 @@
 			}
 			#chip {
 				position: absolute;
+				z-index: 1;
 				left: 1.2ch;
 				top: 0;
 				padding-left: 0.6rem;
@@ -800,6 +837,40 @@
 				pointer-events: none;
 			}
 
+			/* desktop: sidebar & panel alat diam, hanya kertas yang scroll */
+			@media (min-width: 1101px) {
+				html,
+				body {
+					height: 100%;
+					overflow: hidden;
+				}
+				.app {
+					height: 100vh;
+					height: 100dvh;
+					min-height: 0;
+					flex-wrap: nowrap;
+				}
+				#side,
+				#tools,
+				.center {
+					height: 100%;
+					min-height: 0;
+				}
+				.stick {
+					position: static;
+					height: 100%;
+					max-height: none;
+				}
+				main {
+					min-height: 0;
+					overflow: auto;
+					overscroll-behavior: contain;
+				}
+				header,
+				footer {
+					flex: 0 0 auto;
+				}
+			}
 			@media (max-width: 1100px) {
 				#side,
 				#tools {
@@ -812,13 +883,8 @@
 				}
 			}
 			@media (max-width: 820px) {
-				body {
-					padding: 12px;
-				}
-				.app {
-					border-radius: 20px;
-				}
-				#chip {
+				#chip,
+				#pages {
 					display: none;
 				}
 				main {
@@ -826,9 +892,16 @@
 				}
 				.paper {
 					width: 100%;
+					height: auto !important;
 					font-size: 14px;
 					padding: 1.4rem 1rem 3rem;
 					min-height: 80vh;
+					background: var(--paper);
+					border: 1px solid var(--line);
+					border-radius: 12px;
+				}
+				#ed {
+					min-height: 54em !important;
 				}
 				#ed p.character {
 					margin-left: 8ch;
@@ -847,13 +920,14 @@
 			}
 			@media print {
 				@page {
-					size: letter;
 					margin: 1in 1in 1in 1.5in;
 				}
 				html,
 				body {
 					background: #fff;
 					padding: 0;
+					height: auto !important;
+					overflow: visible !important;
 				}
 				.app {
 					display: block;
@@ -861,6 +935,29 @@
 					box-shadow: none;
 					border-radius: 0;
 					min-height: 0;
+					height: auto !important;
+				}
+				.center {
+					height: auto !important;
+				}
+				#pages {
+					display: none !important;
+				}
+				#ed p[data-brk]::before {
+					display: none !important;
+				}
+				#ed p[data-push].scene {
+					margin-top: 2em !important;
+				}
+				#ed p[data-push].action,
+				#ed p[data-push].character,
+				#ed p[data-push].transition {
+					margin-top: 1em !important;
+				}
+				#ed p[data-push].dialogue,
+				#ed p[data-push].paren,
+				#ed p[data-push].blank {
+					margin-top: 0 !important;
 				}
 				#side,
 				#tools,
@@ -872,11 +969,13 @@
 				}
 				main {
 					padding: 0;
-					overflow: visible;
+					overflow: visible !important;
+					background: #fff;
 				}
 				.paper {
 					width: auto;
 					max-width: none;
+					height: auto !important;
 					padding: 0;
 					border: 0;
 					border-radius: 0;
@@ -885,7 +984,7 @@
 					font-size: 12pt;
 				}
 				#ed {
-					min-height: 0;
+					min-height: 0 !important;
 				}
 				#ed[data-empty] p::before {
 					content: "";
@@ -897,6 +996,11 @@
 				#ed p {
 					opacity: 1 !important;
 				}
+			}
+		</style>
+		<style id="pgsz">
+			@page {
+				size: 210mm 297mm;
 			}
 		</style>
 	</head>
@@ -1011,6 +1115,7 @@
 				</header>
 				<main>
 					<div class="paper">
+						<div id="pages" aria-hidden="true"></div>
 						<div id="chip" hidden></div>
 						<div
 							id="ed"
@@ -1152,6 +1257,13 @@
 									aria-label="Mode fokus"
 									title="Redupkan semua baris kecuali yang sedang ditulis"
 								></button>
+							</div>
+							<div class="row">
+								<label for="psize">Ukuran kertas</label>
+								<select
+									id="psize"
+									title="Ukuran lembar kerja (juga dipakai saat cetak)"
+								></select>
 							</div>
 							<div class="row">
 								<span>Mode gelap</span>
@@ -1679,6 +1791,250 @@
 				});
 			}
 
+			/* ---------- Ukuran kertas & halaman terpisah (+ (MORE)/(CONT'D) di batas lembar) ---------- */
+			const PAPERS = {
+				a4: { n: "A4", t: "A4 · 210 × 297 mm", w: 210, h: 297 },
+				f4: { n: "F4 / Folio", t: "F4 · 210 × 330 mm", w: 210, h: 330 },
+				letter: {
+					n: "Letter",
+					t: "Letter · 8,5 × 11 in",
+					w: 215.9,
+					h: 279.4,
+				},
+				legal: {
+					n: "Legal",
+					t: "Legal · 8,5 × 14 in",
+					w: 215.9,
+					h: 355.6,
+				},
+			};
+			const EM_MM = (12 * 25.4) / 72, // 1em (12pt) dalam mm
+				SHEET_GAP = 2, // jarak antar lembar (em)
+				PAD_Y = 6; // margin atas/bawah lembar (em) = 1 inci
+			const KM = {
+				scene: 2,
+				action: 1,
+				character: 1,
+				dialogue: 0,
+				paren: 0,
+				transition: 1,
+				blank: 0,
+			};
+			const paperEl = $(".paper"),
+				pagesEl = $("#pages"),
+				mainEl = $("main"),
+				psize = $("#psize"),
+				pgStyle = $("#pgsz"),
+				fluidMQ = matchMedia("(max-width: 820px)");
+			let paperKey = ls.get("naskah:paper");
+			if (!PAPERS[paperKey]) paperKey = "a4";
+			let pgCfg = null;
+
+			/* Hitung letak tiap paragraf per lembar. Satuan: baris (1em). Fungsi murni. */
+			function pgLayout(items, ph, L) {
+				const pitch = ph + SHEET_GAP,
+					E = 1e-6,
+					out = [],
+					marks = [];
+				const kmOf = (it) => KM[it.kind] || 0;
+				const keepNeed = (i) => {
+					const it = items[i];
+					let need = it.lines,
+						j = i + 1;
+					while (items[j] && items[j].kind === "blank") j++;
+					if (it.kind === "scene") {
+						const n = items[j];
+						if (n) need += kmOf(n) + Math.min(1, n.lines);
+					} else if (it.kind === "character" || it.kind === "paren") {
+						while (items[j] && items[j].kind === "paren") {
+							need += items[j].lines;
+							j++;
+						}
+						const n = items[j];
+						if (n && n.kind === "dialogue")
+							need += Math.min(2, n.lines);
+					}
+					return need;
+				};
+				let y = 0;
+				for (let i = 0; i < items.length; i++) {
+					const it = items[i],
+						o = {};
+					out.push(o);
+					let top = y + (i === 0 ? 0 : kmOf(it));
+					if (it.lines === 0) {
+						y = top;
+						continue;
+					}
+					let k = Math.max(0, Math.floor((y + E) / pitch));
+					let end = k * pitch + L;
+					let pushed = false;
+					const toNext = () => {
+						k++;
+						top = k * pitch;
+						end = k * pitch + L;
+						pushed = true;
+					};
+					if (top > end - E) toNext();
+					const atTop = () => top - k * pitch < E;
+					const canSplit =
+						(it.kind === "dialogue" || it.kind === "action") &&
+						it.lines >= 4;
+					const trySplit = () => {
+						const avail = Math.floor(end - top + E);
+						const dlg = it.kind === "dialogue";
+						let n1 = avail - (dlg ? 1 : 0);
+						if (it.lines - n1 < 2) n1 = it.lines - 2;
+						return canSplit && n1 >= 2 && it.lines > avail ? n1 : 0;
+					};
+					let avail = Math.floor(end - top + E);
+					const holds =
+						it.kind === "scene" ||
+						it.kind === "character" ||
+						it.kind === "paren";
+					if (!atTop() && holds && keepNeed(i) > avail) {
+						toNext();
+						avail = Math.floor(end - top + E);
+					}
+					let n1 = 0;
+					if (it.lines > avail) {
+						n1 = trySplit();
+						if (!n1 && !atTop()) {
+							toNext();
+							avail = Math.floor(end - top + E);
+							if (it.lines > avail) n1 = trySplit();
+						}
+					}
+					if (pushed) o.push = top - y;
+					if (n1) {
+						const dlg = it.kind === "dialogue",
+							cue = dlg && it.name ? 1 : 0,
+							next = (k + 1) * pitch;
+						o.brk = { bo: n1, bh: next - (top + n1) + cue };
+						if (dlg) marks.push({ y: top + n1, text: "(MORE)" });
+						if (cue)
+							marks.push({
+								y: next,
+								text: /\(CONT.?D\)\s*$/i.test(it.name)
+									? it.name
+									: it.name + " (CONT'D)",
+							});
+						y = next + cue + (it.lines - n1);
+					} else y = top + it.lines;
+				}
+				return {
+					out,
+					marks,
+					np: Math.max(1, Math.floor((y - 1e-4) / pitch) + 1),
+					pitch,
+				};
+			}
+
+			function paginate() {
+				if (!pgCfg) return;
+				const kids = [...ed.children];
+				for (const p of kids) {
+					if (p.hasAttribute("data-push")) {
+						p.removeAttribute("data-push");
+						p.style.removeProperty("--mt");
+					}
+					if (p.hasAttribute("data-brk")) {
+						p.removeAttribute("data-brk");
+						p.style.removeProperty("--bo");
+						p.style.removeProperty("--bh");
+					}
+					if (p.getAttribute("style") === "")
+						p.removeAttribute("style");
+				}
+				if (fluidMQ.matches) {
+					pagesEl.replaceChildren();
+					paperEl.style.height = "";
+					ed.style.minHeight = "";
+					return;
+				}
+				const fs = parseFloat(getComputedStyle(ed).fontSize) || 16;
+				let who = "";
+				const items = kids.map((p) => {
+					const kind = p.className.split(" ")[0] || "action";
+					if (kind === "character")
+						who = p.textContent
+							.replace(/\s*\((CONT.?D|MORE)\)\s*$/i, "")
+							.trim()
+							.toUpperCase();
+					else if (kind === "scene" || kind === "transition")
+						who = "";
+					return {
+						kind,
+						lines: Math.round(p.offsetHeight / fs),
+						name: kind === "dialogue" ? who : "",
+					};
+				});
+				const { ph, L } = pgCfg;
+				const r = pgLayout(items, ph, L);
+				r.out.forEach((o, i) => {
+					const p = kids[i];
+					if (o.push != null) {
+						p.setAttribute("data-push", "");
+						p.style.setProperty("--mt", o.push);
+					}
+					if (o.brk) {
+						p.setAttribute("data-brk", "");
+						p.style.setProperty("--bo", o.brk.bo);
+						p.style.setProperty("--bh", o.brk.bh);
+					}
+				});
+				paperEl.style.height = `${(r.np - 1) * r.pitch + ph}em`;
+				ed.style.minHeight = `${(r.np - 1) * r.pitch + L}em`;
+				const frag = document.createDocumentFragment();
+				for (let k = 0; k < r.np; k++) {
+					const pg = document.createElement("div");
+					pg.className = "pg";
+					pg.style.top = `${k * r.pitch}em`;
+					pg.style.height = `${ph}em`;
+					if (k) {
+						const n = document.createElement("span");
+						n.className = "pn";
+						n.textContent = `${k + 1}.`;
+						pg.append(n);
+					}
+					frag.append(pg);
+				}
+				for (const m of r.marks) {
+					const d = document.createElement("div");
+					d.className = "mk";
+					d.style.top = `${PAD_Y + m.y}em`;
+					d.textContent = m.text;
+					frag.append(d);
+				}
+				pagesEl.replaceChildren(frag);
+			}
+
+			function setPaper(key, save) {
+				const P = PAPERS[key];
+				paperKey = key;
+				const pw = P.w / EM_MM,
+					ph = P.h / EM_MM;
+				pgCfg = { pw, ph, L: Math.floor(ph - 2 * PAD_Y + 1e-6) };
+				paperEl.style.setProperty("--pw", pw.toFixed(3));
+				paperEl.style.setProperty("--ph", ph.toFixed(3));
+				pgStyle.textContent = `@page { size: ${P.w}mm ${P.h}mm; }`;
+				psize.value = key;
+				if (save) ls.set("naskah:paper", key);
+				paginate();
+			}
+			for (const [k, P] of Object.entries(PAPERS)) {
+				const o = document.createElement("option");
+				o.value = k;
+				o.textContent = P.n;
+				o.title = P.t;
+				psize.append(o);
+			}
+			psize.onchange = () => setPaper(psize.value, true);
+			fluidMQ.addEventListener("change", paginate);
+			if (document.fonts && document.fonts.ready)
+				document.fonts.ready.then(paginate);
+			setPaper(paperKey, false);
+
 			/* ---------- Render & sinkronisasi ---------- */
 			const lines = () => [...ed.children].map((p) => p.textContent);
 			const getText = () => lines().join("\n");
@@ -1703,6 +2059,7 @@
 				saveMeta();
 				$("#st").textContent =
 					`${A.filter((a) => a.kind === "scene").length} adegan · ${words} kata`;
+				paginate();
 				track();
 			}
 			function mk(t) {
@@ -2000,13 +2357,22 @@
 					B.classList.contains("focus") &&
 					document.activeElement === ed
 				)
-					scrollTo({
-						top:
-							p.getBoundingClientRect().top +
-							scrollY -
-							innerHeight * 0.42,
-						behavior: calm,
-					});
+					getComputedStyle(mainEl).overflowY === "auto"
+						? mainEl.scrollTo({
+								top:
+									p.getBoundingClientRect().top -
+									mainEl.getBoundingClientRect().top +
+									mainEl.scrollTop -
+									mainEl.clientHeight * 0.42,
+								behavior: calm,
+							})
+						: scrollTo({
+								top:
+									p.getBoundingClientRect().top +
+									scrollY -
+									innerHeight * 0.42,
+								behavior: calm,
+							});
 			}
 			nav.onclick = (e) => {
 				const b = e.target.closest("button");
@@ -2149,6 +2515,7 @@
 						ytext.insert(0, text);
 					}
 				}, "import");
+				mainEl.scrollTo({ top: 0 });
 				scrollTo({ top: 0 });
 				flash(
 					`Impor selesai: ${analyze(text.split("\n")).filter((a) => a.kind === "scene").length} adegan`,
@@ -3001,7 +3368,7 @@
 				() => {
 					if (S) drawSug();
 				},
-				{ passive: true },
+				{ passive: true, capture: true },
 			);
 			document.addEventListener("selectionchange", () => {
 				if (!S) return;
