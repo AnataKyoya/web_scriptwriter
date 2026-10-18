@@ -321,7 +321,7 @@
 				transition: opacity 0.3s ease;
 			}
 			#ed p.scene {
-				margin-top: 2em;
+				margin-top: 1em;
 				font-weight: 700;
 				text-transform: uppercase;
 			}
@@ -333,10 +333,12 @@
 				text-transform: uppercase;
 			}
 			#ed p.dialogue {
-				margin: 0 15ch 0 10ch;
+				margin: 0 0 0 10ch; /* 2,5 inci dari tepi kertas */
+				max-width: 35ch; /* blok dialog ~3,5 inci */
 			}
 			#ed p.paren {
-				margin: 0 24ch 0 16ch;
+				margin: 0 0 0 16ch; /* 3,1 inci dari tepi kertas */
+				max-width: 20ch;
 			}
 			#ed p.transition {
 				margin-top: 1em;
@@ -908,9 +910,11 @@
 				}
 				#ed p.dialogue {
 					margin: 0 2ch 0 3ch;
+					max-width: none;
 				}
 				#ed p.paren {
 					margin: 0 4ch 0 6ch;
+					max-width: none;
 				}
 			}
 			@media (prefers-reduced-motion: reduce) {
@@ -946,9 +950,7 @@
 				#ed p[data-brk]::before {
 					display: none !important;
 				}
-				#ed p[data-push].scene {
-					margin-top: 2em !important;
-				}
+				#ed p[data-push].scene,
 				#ed p[data-push].action,
 				#ed p[data-push].character,
 				#ed p[data-push].transition {
@@ -1835,7 +1837,7 @@
 				SHEET_GAP = 2, // jarak antar lembar (em)
 				PAD_Y = 6; // margin atas/bawah lembar (em) = 1 inci
 			const KM = {
-				scene: 2,
+				scene: 1,
 				action: 1,
 				character: 1,
 				dialogue: 0,
