@@ -246,6 +246,46 @@
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
+			#sug {
+				position: fixed;
+				z-index: 30;
+				min-width: 11rem;
+				max-width: min(24rem, 92vw);
+				background: var(--bar);
+				border: 1px solid #3b4e5a;
+				border-radius: 8px;
+				padding: 0.25rem;
+				box-shadow: 0 8px 24px #0008;
+			}
+			#sug[hidden] {
+				display: none;
+			}
+			#sug button {
+				display: block;
+				width: 100%;
+				text-align: left;
+				background: none;
+				border: 0;
+				border-radius: 5px;
+				padding: 0.3rem 0.6rem;
+				font:
+					13px/1.2 "Courier Prime",
+					monospace;
+				color: #dfe8ec;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			#sug button[aria-selected="true"] {
+				background: var(--acc);
+				color: #07211d;
+			}
+			#sug small {
+				display: block;
+				padding: 0.25rem 0.6rem 0;
+				color: #8fa2ab;
+				font-size: 11px;
+			}
 			body.drop::after {
 				content: "Lepas file .txt untuk mengimpor";
 				position: fixed;
@@ -607,6 +647,16 @@
 						terhapus.
 					</li>
 					<li>
+						<b>Saran otomatis</b>: saat menulis judul adegan (awalan
+						INT./EXT., lokasi dari adegan sebelumnya, lalu waktu
+						seperti MALAM) dan nama karakter (termasuk (V.O.),
+						(O.S.)), muncul daftar saran. Tekan
+						<code>Tab</code> untuk memilih, <code>↑↓</code> untuk
+						menggeser, <code>Enter</code> setelah menggeser,
+						<code>Esc</code> untuk menutup. Di layar sentuh, ketuk
+						salah satu saran.
+					</li>
+					<li>
 						<b>Impor</b>: klik <i>Impor .txt</i> atau seret file ke
 						halaman. Nomor adegan dibuang, indentasi
 						karakter/dialog/transisi dibaca, lalu semuanya dirender
@@ -640,6 +690,7 @@
 			<span id="st"></span><span id="sync"></span><span id="cl"></span>
 		</footer>
 
+		<div id="sug" role="listbox" aria-label="Saran" hidden></div>
 		<dialog id="dlg">
 			<form method="dialog">
 				<p>
@@ -910,6 +961,7 @@
 				restyle();
 				push();
 				$("#sync").textContent = "tersimpan di perangkat";
+				suggest();
 			};
 			ed.addEventListener("input", onInput);
 
@@ -1841,10 +1893,264 @@
 						},
 					});
 					$("#amsg").textContent = error
-						? error.message
+						? /rate limit|429/i.test(error.message + error.status)
+							? "Batas pengiriman email Supabase tercapai (bawaan hanya 2 email per jam untuk seluruh proyek). Tunggu sekitar 1 jam, atau pasang SMTP sendiri di dashboard Supabase (lihat README)."
+							: error.message
 						: "Tautan dikirim. Buka emailmu di browser ini, lalu klik tautannya.";
 				};
 			}
+
+			/* ---------- Saran otomatis: judul adegan & karakter ---------- */
+			const PREFIXES = ["INT. ", "EXT. ", "INT./EXT. ", "EST. "];
+			const TIMES = [
+				"DAY",
+				"NIGHT",
+				"MORNING",
+				"AFTERNOON",
+				"EVENING",
+				"DAWN",
+				"DUSK",
+				"LATER",
+				"CONTINUOUS",
+				"MOMENTS LATER",
+				"PAGI",
+				"SIANG",
+				"SORE",
+				"MALAM",
+				"SUBUH",
+				"KEMUDIAN",
+			];
+			const HEAD =
+				/^\.?(INT\.\/EXT\.|INT\/EXT\.?|INT\.|EXT\.|EST\.|I\/E\.?)\s(.*)$/i;
+			const EXTS = ["(V.O.)", "(O.S.)", "(O.C.)", "(CONT'D)"];
+			function itemsFor(L, idx) {
+				const t = L[idx],
+					A = analyze(L),
+					out = [],
+					add = (label, value) => {
+						if (!out.some((o) => o.value === value))
+							out.push({ label, value });
+					};
+				const lo = t.toLowerCase();
+				if (t.length >= 2 && !/^[.!@>]/.test(t)) {
+					PREFIXES.forEach((o) => {
+						if (
+							o.toLowerCase().startsWith(lo) &&
+							o.toLowerCase() !== lo
+						)
+							add(o.trim(), o);
+					});
+					if (out.length) return out;
+				}
+				const m = t.match(HEAD);
+				if (m) {
+					// judul adegan: lokasi lalu waktu
+					const raw = m[2],
+						pre = t.slice(0, t.length - raw.length),
+						body = raw.replace(/^\s+/, "").toUpperCase(),
+						locs = [],
+						used = [];
+					for (let i = L.length - 1; i >= 0; i--) {
+						if (i === idx) continue;
+						const h = L[i].match(HEAD);
+						if (!h) continue;
+						const segs = h[2]
+							.toUpperCase()
+							.trim()
+							.split(/\s+-\s+/);
+						if (
+							segs.length > 1 &&
+							TIMES.includes(segs[segs.length - 1])
+						) {
+							const tm = segs.pop();
+							if (!used.includes(tm)) used.push(tm);
+						}
+						const loc = segs.join(" - ");
+						if (loc && !locs.includes(loc)) locs.push(loc);
+					}
+					const di = body.lastIndexOf(" - ");
+					if (di < 0) {
+						const ty = body.trim();
+						locs.filter((c) => c !== ty && c.startsWith(ty))
+							.slice(0, 6)
+							.forEach((c) => add(c, pre + c + " - "));
+						if (!out.length && ty.length >= 2)
+							locs.filter((c) => c !== ty && c.includes(ty))
+								.slice(0, 6)
+								.forEach((c) => add(c, pre + c + " - "));
+					} else {
+						const left = body.slice(0, di),
+							ty = body.slice(di + 3).trim(),
+							whole = left + " - " + ty;
+						locs.filter((c) => c !== whole && c.startsWith(whole))
+							.slice(0, 4)
+							.forEach((c) => add(c, pre + c + " - "));
+						[...used, ...TIMES.filter((x) => !used.includes(x))]
+							.filter((x) => x !== ty && x.startsWith(ty))
+							.slice(0, 5)
+							.forEach((x) => add(x, pre + left + " - " + x));
+					}
+					return out.slice(0, 7);
+				}
+				if (/^[.!>]/.test(t)) return out;
+				const at = t.startsWith("@") ? "@" : "",
+					ty = t.slice(at.length),
+					pk = idx > 0 ? A[idx - 1].kind : "";
+				if (pk === "character" || pk === "paren") return out; // baris ini dialog, bukan karakter
+				const names = [];
+				for (let i = L.length - 1; i >= 0; i--) {
+					if (i === idx || A[i].kind !== "character") continue;
+					const n = speaker(L[i]);
+					if (n && !names.includes(n)) names.push(n);
+				}
+				const em = ty.match(/^(.*?)\s*\(([A-Za-z.' ]*)$/);
+				if (em) {
+					const nm = em[1].trim().toUpperCase(),
+						q = ("(" + em[2]).toLowerCase();
+					if (names.includes(nm))
+						EXTS.forEach((x) => {
+							if (
+								x.toLowerCase().startsWith(q) &&
+								x.toLowerCase() !== q
+							)
+								add(x, at + nm + " " + x);
+						});
+					return out;
+				}
+				if (ty.length >= 2 && !/[().!?:]/.test(ty)) {
+					const U = ty.toUpperCase();
+					names
+						.filter((n) => n.startsWith(U) && n !== U)
+						.slice(0, 6)
+						.forEach((n) => add(n, at + n));
+				}
+				return out;
+			}
+			const sug = $("#sug");
+			let S = null;
+			function hideSug() {
+				S = null;
+				sug.hidden = true;
+			}
+			function drawSug() {
+				sug.innerHTML =
+					S.items
+						.map(
+							(x, n) =>
+								`<button type="button" role="option" data-n="${n}"${n === S.i ? ' aria-selected="true"' : ""}>${esc(x.label)}</button>`,
+						)
+						.join("") +
+					"<small>Tab pilih · ↑↓ geser · Esc tutup</small>";
+				const s = getSelection();
+				let r = s.rangeCount
+					? s.getRangeAt(0).getBoundingClientRect()
+					: null;
+				if (!r || (!r.height && !r.top))
+					r = S.p.getBoundingClientRect();
+				sug.hidden = false;
+				sug.style.left =
+					Math.max(
+						8,
+						Math.min(r.left, innerWidth - sug.offsetWidth - 8),
+					) + "px";
+				sug.style.top = r.bottom + 6 + "px";
+			}
+			function suggest() {
+				const s = getSelection();
+				if (
+					!s.rangeCount ||
+					!s.isCollapsed ||
+					!ed.contains(s.anchorNode)
+				)
+					return hideSug();
+				let p = s.anchorNode;
+				while (p.parentNode !== ed) p = p.parentNode;
+				const r = document.createRange();
+				r.selectNodeContents(p);
+				r.setEnd(s.anchorNode, s.anchorOffset);
+				if (r.toString().length !== p.textContent.length)
+					return hideSug(); // saran hanya saat kursor di ujung baris
+				const L = lines(),
+					items = itemsFor(L, [...ed.children].indexOf(p));
+				if (!items.length) return hideSug();
+				S = { p, items, i: 0, nav: false };
+				drawSug();
+			}
+			function acceptSug() {
+				if (!S) return;
+				const { p, items, i } = S;
+				hideSug();
+				p.textContent = items[i].value;
+				const r = document.createRange();
+				r.selectNodeContents(p);
+				r.collapse(false);
+				const s = getSelection();
+				s.removeAllRanges();
+				s.addRange(r);
+				onInput();
+			}
+			ed.addEventListener(
+				"keydown",
+				(e) => {
+					if (!S || e.isComposing) return;
+					const stop = () => {
+						e.preventDefault();
+						e.stopImmediatePropagation();
+					};
+					if (e.key === "Tab") {
+						stop();
+						acceptSug();
+					} else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+						stop();
+						S.i =
+							(S.i +
+								(e.key === "ArrowDown"
+									? 1
+									: S.items.length - 1)) %
+							S.items.length;
+						S.nav = true;
+						drawSug();
+					} else if (e.key === "Enter" && S.nav) {
+						stop();
+						acceptSug();
+					} else if (e.key === "Escape") {
+						e.preventDefault();
+						hideSug();
+					}
+				},
+				true,
+			);
+			sug.addEventListener("mousedown", (e) => e.preventDefault());
+			sug.addEventListener("click", (e) => {
+				const b = e.target.closest("button[data-n]");
+				if (b && S) {
+					S.i = +b.dataset.n;
+					acceptSug();
+				}
+			});
+			ed.addEventListener("blur", hideSug);
+			addEventListener(
+				"scroll",
+				() => {
+					if (S) drawSug();
+				},
+				{ passive: true },
+			);
+			document.addEventListener("selectionchange", () => {
+				if (!S) return;
+				const s = getSelection();
+				if (
+					!s.rangeCount ||
+					!s.isCollapsed ||
+					!ed.contains(S.p) ||
+					!S.p.contains(s.anchorNode)
+				)
+					return hideSug();
+				const r = document.createRange();
+				r.selectNodeContents(S.p);
+				r.setEnd(s.anchorNode, s.anchorOffset);
+				if (r.toString().length !== S.p.textContent.length) hideSug();
+			});
 
 			let curEl = null;
 			render();
