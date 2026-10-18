@@ -621,6 +621,15 @@
 			>
 				Undang script
 			</button>
+			<input
+				id="sname"
+				type="text"
+				placeholder="Nama script"
+				aria-label="Nama script"
+				title="Beri nama script ini. Kosongkan untuk memakai baris pertama naskah sebagai nama."
+				maxlength="60"
+				style="width: 11rem"
+			/>
 			<label
 				title="Ubah jenis baris yang sedang dipilih (Alt+1 sampai Alt+6). Teks ikut diformat otomatis."
 				>Format baris
@@ -896,7 +905,8 @@
 
 			/* ---------- Dokumen bersama (Yjs): teks polos berformat Fountain ---------- */
 			const doc = new Y.Doc(),
-				ytext = doc.getText("script");
+				ytext = doc.getText("script"),
+				ymeta = doc.getMap("meta"); // nama script (ikut tersinkron ke kolaborator)
 			const MAX_UNDO = 30; // riwayat urungkan: hanya perubahanmu sendiri, bukan milik kolaborator
 			const um = new Y.UndoManager(ytext, {
 				trackedOrigins: new Set(["local", "import"]),
@@ -1700,6 +1710,12 @@
 				}
 			});
 
+			// Ctrl+S / Cmd+S dimatikan: cegah dialog "Simpan halaman" bawaan browser
+			document.addEventListener("keydown", (e) => {
+				if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s")
+					e.preventDefault();
+			});
+
 			/* ---------- Naskah baru & daftar naskah di perangkat ---------- */
 			const LK = "naskah:list",
 				ndlg = $("#ndlg");
@@ -1721,14 +1737,33 @@
 						.find(Boolean);
 					const old = readList(),
 						ex = old.find((x) => x.room === room),
-						title = first ? first.slice(0, 48) : ex && ex.title;
+						custom = String(ymeta.get("title") || "").trim(),
+						title =
+							custom ||
+							(first ? first.slice(0, 48) : ex && ex.title);
 					const l = old.filter((x) => x.room !== room);
 					if (title) l.unshift({ room, title });
 					ls.set(LK, JSON.stringify(l.slice(0, 200)));
 					renderProj();
-					if (first && cloudApi) cloudApi.title(first.slice(0, 48));
+					const ct = custom || (first && first.slice(0, 48));
+					if (ct && cloudApi) cloudApi.title(ct);
 				}, 800);
 			}
+			/* nama script manual: tersimpan di dokumen Yjs, menggantikan judul otomatis */
+			const snameEl = $("#sname");
+			snameEl.oninput = () => {
+				doc.transact(
+					() => ymeta.set("title", snameEl.value.trim().slice(0, 60)),
+					"local",
+				);
+				saveMeta();
+			};
+			ymeta.observe(() => {
+				if (document.activeElement !== snameEl)
+					snameEl.value = ymeta.get("title") || "";
+				saveMeta();
+			});
+			snameEl.value = ymeta.get("title") || "";
 			const go = (r) => {
 				ls.set("naskah:last", r);
 				location.hash = r;
@@ -1817,13 +1852,11 @@
 					if (!q.length) return;
 					const batch = q;
 					q = [];
-					const { error } = await sb
-						.from("script_updates")
-						.insert({
-							script_id: room,
-							client: doc.clientID,
-							data: b64(Y.mergeUpdates(batch)),
-						});
+					const { error } = await sb.from("script_updates").insert({
+						script_id: room,
+						client: doc.clientID,
+						data: b64(Y.mergeUpdates(batch)),
+					});
 					if (error) {
 						q = batch.concat(q);
 						status("☁ belum tersimpan, mencoba lagi…");
@@ -1914,13 +1947,11 @@
 						Y.encodeStateVector(cdoc),
 					);
 					if (diff.length > 2)
-						await sb
-							.from("script_updates")
-							.insert({
-								script_id: room,
-								client: doc.clientID,
-								data: b64(diff),
-							});
+						await sb.from("script_updates").insert({
+							script_id: room,
+							client: doc.clientID,
+							data: b64(diff),
+						});
 					if (count > 150)
 						sb.rpc("compact_script", {
 							p_sid: room,
