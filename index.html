@@ -358,7 +358,7 @@
 				content: "";
 				float: left;
 				width: 100%;
-				height: calc(var(--bh) * 1em);
+				height: calc((var(--bo) + var(--bh)) * 1em);
 				shape-outside: inset(calc(var(--bo) * 1em) 0 0 0);
 			}
 			#ed p[data-cont]::after {
@@ -1455,18 +1455,18 @@
 					<li>
 						<b>Judul adegan</b>: baris diawali <code>INT.</code>
 						<code>EXT.</code> <code>EST.</code> atau
-						<code>I/E</code> (atau paksa dengan <code>.</code>).
+						<code>I/E</code> (atau pilih lewat tombol Format baris).
 					</li>
 					<li>
 						<b>Karakter</b>: baris HURUF KAPITAL tanpa tanda akhir
-						kalimat (atau paksa dengan <code>@</code>). Baris
+						kalimat (atau pilih lewat tombol Format baris). Baris
 						sesudahnya otomatis jadi dialog; baris
 						<code>(dalam kurung)</code> jadi parenthetical.
 					</li>
 					<li>
-						<b>Aksi</b>: semua baris lain (paksa dengan
-						<code>!</code>). Tekan Enter sesudah dialog untuk
-						kembali ke aksi.
+						<b>Aksi</b>: semua baris lain (atau pilih lewat Format
+						baris). Tekan Enter sesudah dialog untuk kembali ke
+						aksi.
 					</li>
 					<li>
 						<b>Transisi</b>: <code>CUT TO:</code>
@@ -1489,7 +1489,10 @@
 						adegan jadi KAPITAL berawalan INT., karakter KAPITAL
 						tanpa tanda baca akhir, parenthetical diberi kurung,
 						dialog dibuat huruf biasa. Bisa untuk beberapa baris
-						sekaligus.
+						sekaligus. Jenis baris disimpan sebagai penanda
+						terpisah, jadi tidak ada simbol tambahan di teks; simbol
+						Fountain baru ditambahkan di file ekspor, itu pun hanya
+						bila perlu.
 					</li>
 					<li>
 						<b>Proyek</b>: panel <i>Proyek</i> di kiri
@@ -1742,15 +1745,35 @@
 					.replace(/\s*\(.*?\)/g, "")
 					.trim()
 					.toUpperCase();
-			function analyze(lines) {
+			function analyze(lines, kinds = []) {
 				const max = +$("#max").value || 0,
 					useCont = $("#cont").checked;
 				let prev = "blank",
 					last = null,
 					acts = 0;
-				return lines.map((t) => {
+				return lines.map((t, idx) => {
 					const s = t.trim(),
 						r = { kind: "blank", cont: false };
+					const ek = kinds[idx]; // jenis yang dipilih manual: tanpa tebakan, tanpa simbol
+					if (ek) {
+						r.kind = ek;
+						if (ek === "scene" || ek === "transition") last = null;
+						else if (ek === "character") {
+							const n = speaker(s);
+							if (
+								useCont &&
+								s &&
+								last === n &&
+								acts <= max &&
+								!/CONT.?D/i.test(s)
+							)
+								r.cont = true;
+							last = n;
+							acts = 0;
+						} else if (ek === "action") acts++;
+						prev = ek;
+						return r;
+					}
 					if (!s) {
 						prev = "blank";
 						return r;
@@ -2035,12 +2058,133 @@
 				document.fonts.ready.then(paginate);
 			setPaper(paperKey, false);
 
+			/* ---------- Format baris disimpan sebagai atribut (bukan simbol di teks) ----------
+			   Teks dokumen = baris-baris bersih, tiap baris diakhiri "\n". Jenis baris yang dipilih
+			   manual disimpan sebagai atribut "k" pada karakter "\n" penutup barisnya. Tanpa atribut
+			   = jenis ditebak otomatis. */
+			const KIND_LIST = [
+				"scene",
+				"action",
+				"character",
+				"dialogue",
+				"paren",
+				"transition",
+			];
+			function readDoc() {
+				const L = [""],
+					K = [null];
+				for (const op of ytext.toDelta()) {
+					if (typeof op.insert !== "string") continue;
+					const k =
+						op.attributes && KIND_LIST.includes(op.attributes.k)
+							? op.attributes.k
+							: null;
+					op.insert.split("\n").forEach((part, i) => {
+						if (i) {
+							K[L.length - 1] = k;
+							L.push("");
+							K.push(null);
+						}
+						L[L.length - 1] += part;
+					});
+				}
+				if (L.length > 1 && L[L.length - 1] === "") {
+					L.pop();
+					K.pop();
+				}
+				return { L, K };
+			}
+			/* samakan dokumen Yjs dengan keadaan editor (teks + jenis baris) */
+			function pushState(L, K) {
+				const a = ytext.toString(),
+					b = L.join("\n") + "\n";
+				doc.transact(() => {
+					if (a !== b) {
+						let i = 0;
+						while (i < a.length && i < b.length && a[i] === b[i])
+							i++;
+						let j = 0;
+						while (
+							j < a.length - i &&
+							j < b.length - i &&
+							a[a.length - 1 - j] === b[b.length - 1 - j]
+						)
+							j++;
+						ytext.delete(i, a.length - i - j);
+						ytext.insert(i, b.slice(i, b.length - j), { k: null });
+					}
+					const cur = readDoc();
+					let off = 0;
+					L.forEach((t, i) => {
+						const idx = off + t.length;
+						off = idx + 1;
+						const want = K[i] || null;
+						if ((cur.K[i] || null) !== want && idx < ytext.length)
+							ytext.format(idx, 1, { k: want });
+					});
+					if (ymeta.get("fmt") !== 2) ymeta.set("fmt", 2);
+				}, "local");
+			}
+			/* tulis banyak baris sekaligus (impor) */
+			function writeLines(L, K, mode) {
+				doc.transact(() => {
+					let base = 0;
+					if (mode === "append") {
+						const s = ytext.toString();
+						if (s && !s.endsWith("\n"))
+							ytext.insert(s.length, "\n", { k: null });
+						base = ytext.length;
+					} else ytext.delete(0, ytext.length);
+					ytext.insert(base, L.join("\n") + "\n", { k: null });
+					let off = base;
+					L.forEach((t, i) => {
+						const idx = off + t.length;
+						off = idx + 1;
+						if (K[i]) ytext.format(idx, 1, { k: K[i] });
+					});
+					if (ymeta.get("fmt") !== 2) ymeta.set("fmt", 2);
+				}, "import");
+			}
+			/* naskah lama: simbol @ ! . > di awal baris dibuang, jenisnya jadi atribut (sekali saja) */
+			function migrateLegacy() {
+				if (ymeta.get("fmt") === 2) return;
+				const s = ytext.toString();
+				if (!s.trim()) return;
+				const { L, K } = readDoc(),
+					A = analyze(L, []),
+					SYM = /^\s*[.!@>](?![.!@>])\s?/,
+					starts = [];
+				let o = 0;
+				L.forEach((t) => {
+					starts.push(o);
+					o += t.length + 1;
+				});
+				doc.transact(() => {
+					if (!s.endsWith("\n"))
+						ytext.insert(s.length, "\n", { k: null });
+					for (let i = L.length - 1; i >= 0; i--) {
+						const m = !K[i] && L[i].match(SYM);
+						if (!m) continue;
+						ytext.delete(starts[i], m[0].length);
+						if (KIND_LIST.includes(A[i].kind))
+							ytext.format(
+								starts[i] + L[i].length - m[0].length,
+								1,
+								{ k: A[i].kind },
+							);
+					}
+					ymeta.set("fmt", 2);
+				}, "migrate");
+			}
+
 			/* ---------- Render & sinkronisasi ---------- */
 			const lines = () => [...ed.children].map((p) => p.textContent);
+			const kinds = () =>
+				[...ed.children].map((p) => p.dataset.k || null);
 			const getText = () => lines().join("\n");
 			function restyle() {
 				const L = lines(),
-					A = analyze(L);
+					A = analyze(L, kinds());
 				[...ed.children].forEach((p, i) => {
 					p.className = A[i].kind + (p === curEl ? " cur" : "");
 					A[i].cont
@@ -2067,27 +2211,19 @@
 				t ? (p.textContent = t) : (p.innerHTML = "<br>");
 				return p;
 			}
+			const rows = (L, K) =>
+				L.map((t, i) => {
+					const p = mk(t);
+					if (K[i]) p.dataset.k = K[i];
+					return p;
+				});
 			function render() {
-				ed.replaceChildren(...ytext.toString().split("\n").map(mk));
+				const { L, K } = readDoc();
+				ed.replaceChildren(...rows(L, K));
 				restyle();
 			}
 			function push() {
-				const a = ytext.toString(),
-					b = getText();
-				if (a === b) return;
-				let i = 0;
-				while (i < a.length && i < b.length && a[i] === b[i]) i++;
-				let j = 0;
-				while (
-					j < a.length - i &&
-					j < b.length - i &&
-					a[a.length - 1 - j] === b[b.length - 1 - j]
-				)
-					j++;
-				doc.transact(() => {
-					ytext.delete(i, a.length - i - j);
-					ytext.insert(i, b.slice(i, b.length - j));
-				}, "local");
+				pushState(lines(), kinds());
 			}
 			function normalize() {
 				for (const n of [...ed.childNodes])
@@ -2149,8 +2285,10 @@
 					let pos = 0,
 						end = 0;
 					for (const d of e.delta) {
-						if (d.retain) pos += d.retain;
-						else if (d.insert) {
+						if (d.retain) {
+							pos += d.retain;
+							if (d.attributes) end = pos;
+						} else if (d.insert) {
 							pos += d.insert.length;
 							end = pos;
 						} else if (d.delete) end = pos;
@@ -2194,6 +2332,10 @@
 				if (!p.textContent) p.innerHTML = "<br>";
 				const np = mk(rest);
 				p.after(np);
+				if (!p.textContent && rest && p.dataset.k) {
+					np.dataset.k = p.dataset.k; // Enter di awal baris: jenis ikut teksnya
+					delete p.dataset.k;
+				}
 				setCaret(0);
 				const q = document.createRange();
 				q.setStart(
@@ -2241,9 +2383,28 @@
 			$("#prt").onclick = () => print();
 			$("#exp").onclick = () => {
 				const L = lines(),
-					A = analyze(L);
+					A = analyze(L, kinds()),
+					E = L.slice();
+				for (let pass = 0; pass < 4; pass++) {
+					// simbol Fountain hanya ditambahkan di file ekspor, dan hanya bila tebakan otomatis akan salah
+					const G = analyze(E);
+					let ch = false;
+					A.forEach((a, i) => {
+						const p = PRE[a.kind];
+						if (
+							a.kind !== "blank" &&
+							G[i].kind !== a.kind &&
+							p &&
+							!E[i].startsWith(p)
+						) {
+							E[i] = p + E[i];
+							ch = true;
+						}
+					});
+					if (!ch) break;
+				}
 				let out = "";
-				L.forEach((t, i) => {
+				E.forEach((t, i) => {
 					const k = A[i].kind;
 					if (k === "blank") return;
 					const pk = i ? A[i - 1].kind : "";
@@ -2459,28 +2620,21 @@
 			}
 			function importText(raw) {
 				const want = parseScript(raw),
-					out = want.map((w) => w.t),
-					pre = {
-						scene: ".",
-						action: "!",
-						character: "@",
-						transition: ">",
-					};
+					L = want.map((w) => w.t),
+					K = want.map(() => null);
 				for (let pass = 0; pass < 4; pass++) {
-					// paksa awalan hanya bila tebakan editor beda dari struktur file
-					const A = analyze(out);
+					// jenis eksplisit hanya untuk baris yang tebakan editornya beda dari struktur file
+					const A = analyze(L, K);
 					let ch = false;
 					A.forEach((a, i) => {
-						const w = want[i].k,
-							p = pre[w];
-						if (a.kind !== w && p && !out[i].startsWith(p)) {
-							out[i] = p + out[i];
+						if (a.kind !== want[i].k) {
+							K[i] = want[i].k;
 							ch = true;
 						}
 					});
 					if (!ch) break;
 				}
-				return out.join("\n");
+				return { L, K };
 			}
 			const dlg = $("#dlg"),
 				flash = (m) => {
@@ -2496,8 +2650,8 @@
 				});
 			async function doImport(file) {
 				if (!file) return;
-				const text = importText(await file.text());
-				if (!text.trim()) {
+				const imp = importText(await file.text());
+				if (!imp.L.some((t) => t.trim())) {
 					flash("File kosong, tidak ada yang diimpor");
 					return;
 				}
@@ -2507,18 +2661,11 @@
 					if (mode === "cancel") return;
 				}
 				um.stopCapturing();
-				doc.transact(() => {
-					if (mode === "append")
-						ytext.insert(ytext.length, "\n" + text);
-					else {
-						ytext.delete(0, ytext.length);
-						ytext.insert(0, text);
-					}
-				}, "import");
+				writeLines(imp.L, imp.K, mode);
 				mainEl.scrollTo({ top: 0 });
 				scrollTo({ top: 0 });
 				flash(
-					`Impor selesai: ${analyze(text.split("\n")).filter((a) => a.kind === "scene").length} adegan`,
+					`Impor selesai: ${analyze(imp.L, imp.K).filter((a) => a.kind === "scene").length} adegan`,
 				);
 			}
 			$("#imp").onclick = () => $("#file").click();
@@ -2592,7 +2739,8 @@
 			}
 			function applyKind(k) {
 				let [a, b] = selIdx;
-				const L = lines();
+				const L = lines(),
+					K = kinds();
 				if (a >= L.length) return;
 				b = Math.min(b, L.length - 1);
 				if ((k === "dialogue" || k === "paren") && b > a) {
@@ -2600,44 +2748,30 @@
 						.map((x) => fmt(x, "auto"))
 						.join(" ");
 					L.splice(a, b - a + 1, j);
+					K.splice(a, b - a + 1, null);
 					b = a;
 				}
-				for (let i = a; i <= b; i++) L[i] = fmt(L[i], k);
+				for (let i = a; i <= b; i++) {
+					L[i] = fmt(L[i], k);
+					K[i] = k === "auto" ? null : k; // jenis disimpan sebagai atribut, bukan simbol
+				}
 				let sel = null;
-				if (PRE[k]) {
-					for (let pass = 0; pass < 4; pass++) {
-						const A = analyze(L);
-						let ch = false;
-						for (let i = a; i <= b; i++)
-							if (A[i].kind !== k && !L[i].startsWith(PRE[k])) {
-								L[i] = PRE[k] + L[i];
-								ch = true;
-							}
-						if (!ch) break;
-					}
-				} else if (k === "dialogue" || k === "paren") {
-					const A = analyze(L);
-					if (A[a].kind !== k) {
-						if (k === "paren") {
-							flash(
-								"Parenthetical hanya bisa di dalam dialog: taruh di bawah baris karakter atau dialog.",
-							);
-							return;
-						}
-						if (a > 0 && A[a - 1].kind === "dialogue") {
-							L[a - 1] += " " + L.splice(a, 1)[0];
-							a--;
-							b = a;
-						} // lanjutan dialog -> gabung
-						else {
-							L.splice(a, 0, "NAMA");
-							sel = a;
-							b = a + 1;
-						} // dialog butuh karakter di atasnya
-					}
+				if (k === "dialogue") {
+					const A = analyze(L, K),
+						pk = a > 0 ? A[a - 1].kind : "";
+					if (
+						pk !== "character" &&
+						pk !== "paren" &&
+						pk !== "dialogue"
+					) {
+						L.splice(a, 0, "NAMA");
+						K.splice(a, 0, "character");
+						sel = a;
+						b = a + 1;
+					} // dialog butuh karakter di atasnya
 				}
 				um.stopCapturing();
-				ed.replaceChildren(...L.map(mk));
+				ed.replaceChildren(...rows(L, K));
 				restyle();
 				push();
 				um.stopCapturing();
@@ -2987,6 +3121,7 @@
 						if (ups.length < 1000) break;
 					}
 					Y.applyUpdate(doc, Y.encodeStateAsUpdate(cdoc), "cloud");
+					migrateLegacy();
 					// unggah apa pun yang baru ada di perangkat ini
 					const diff = Y.encodeStateAsUpdate(
 						doc,
@@ -3156,12 +3291,14 @@
 			const EXTS = ["(V.O.)", "(O.S.)", "(O.C.)", "(CONT'D)"];
 			function itemsFor(L, idx) {
 				const t = L[idx],
-					A = analyze(L),
+					A = analyze(L, kinds()),
 					out = [],
 					add = (label, value) => {
 						if (!out.some((o) => o.value === value))
 							out.push({ label, value });
 					};
+				const ek = kinds()[idx];
+				if (ek && ek !== "character" && ek !== "scene") return out;
 				const lo = t.toLowerCase();
 				const nm = t.match(/^(\d+[A-Za-z]?[.)]?\s+)?([\s\S]*)$/),
 					num = nm[1] || "",
@@ -3688,6 +3825,7 @@
 			let curEl = null;
 			render();
 			normalize();
+			idb.whenSynced.then(() => migrateLegacy());
 			initCloud().catch((e) => {
 				$("#cl").textContent = "mode lokal (" + e.message + ")";
 			});
