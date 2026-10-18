@@ -5,6 +5,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Naskah — fokus pada cerita, bukan format</title>
 		<script src="config.js"></script>
+		<link
+			rel="icon"
+			href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🎬%3C/text%3E%3C/svg%3E"
+		/>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
@@ -609,8 +613,11 @@
 						ulang dengan format di sini.
 					</li>
 					<li>
-						<b>Kolaborasi</b>: bagikan tautan ini; siapa pun yang
-						membukanya menulis di naskah yang sama secara langsung.
+						<b>Kolaborasi</b>: masuk dengan akun, klik
+						<i>Undang</i> untuk memberi akses lewat email, lalu
+						bagikan tautan naskah. Perubahan sampai ke semua orang
+						secara langsung. Tanpa akun, kolaborasi live butuh
+						server signaling WebRTC sendiri (lihat README).
 					</li>
 				</ul>
 			</div>
@@ -726,36 +733,54 @@
 				captureTimeout: 600,
 			});
 			const idb = new IndexeddbPersistence("naskah-" + room, doc);
-			const sig = new URLSearchParams(location.search).get("signal"); // ?signal=wss://server-kamu
-			const provider = new WebrtcProvider("naskah-" + room, doc, {
-				password: room,
-				...(sig ? { signaling: [sig] } : {}),
-			});
-			const aw = provider.awareness;
+			// WebRTC hanya aktif bila ada server signaling sendiri (?signal=wss://... atau signaling di config.js).
+			// Server publik bawaan y-webrtc (y-webrtc-eu.fly.dev) sudah mati, jadi tidak dipakai lagi.
+			const sigQ = new URLSearchParams(location.search).get("signal");
+			const sigs = sigQ
+				? [sigQ]
+				: (window.NASKAH_CONFIG && window.NASKAH_CONFIG.signaling) ||
+					[];
+			const provider = sigs.length
+				? new WebrtcProvider("naskah-" + room, doc, {
+						password: room,
+						signaling: sigs,
+					})
+				: null;
 			const myColor = `hsl(${Math.floor(Math.random() * 360)} 65% 60%)`;
+			const me = () => ({
+				name: $("#name").value.trim() || "Anonim",
+				color: myColor,
+			});
+			let presenceTrack = null;
+			function showPeers(us) {
+				$("#peers").innerHTML = us.length
+					? us
+							.map(
+								(u) =>
+									`<span class="dot" style="background:${u.color}" title="${String(u.name).replace(/[<&"]/g, "")}"></span>`,
+							)
+							.join("") + ` ${us.length} online`
+					: "";
+			}
 			$("#name").value = ls.get("naskah:name") || "";
-			const setUser = () =>
-				aw.setLocalStateField("user", {
-					name: $("#name").value.trim() || "Anonim",
-					color: myColor,
-				});
+			const setUser = () => {
+				if (provider)
+					provider.awareness.setLocalStateField("user", me());
+				if (presenceTrack) presenceTrack();
+			};
 			$("#name").oninput = () => {
 				ls.set("naskah:name", $("#name").value);
 				setUser();
 			};
 			setUser();
-			aw.on("change", () => {
-				const us = [...aw.getStates().values()]
-					.map((s) => s.user)
-					.filter(Boolean);
-				$("#peers").innerHTML =
-					us
-						.map(
-							(u) =>
-								`<span class="dot" style="background:${u.color}" title="${u.name.replace(/[<&"]/g, "")}"></span>`,
-						)
-						.join("") + ` ${us.length} online`;
-			});
+			if (provider)
+				provider.awareness.on("change", () =>
+					showPeers(
+						[...provider.awareness.getStates().values()]
+							.map((x) => x.user)
+							.filter(Boolean),
+					),
+				);
 
 			/* ---------- Klasifikasi baris -> elemen script ---------- */
 			const SCENE =
@@ -1610,11 +1635,13 @@
 					if (!q.length) return;
 					const batch = q;
 					q = [];
-					const { error } = await sb.from("script_updates").insert({
-						script_id: room,
-						client: doc.clientID,
-						data: b64(Y.mergeUpdates(batch)),
-					});
+					const { error } = await sb
+						.from("script_updates")
+						.insert({
+							script_id: room,
+							client: doc.clientID,
+							data: b64(Y.mergeUpdates(batch)),
+						});
 					if (error) {
 						q = batch.concat(q);
 						status("☁ belum tersimpan, mencoba lagi…");
@@ -1685,11 +1712,13 @@
 						Y.encodeStateVector(cdoc),
 					);
 					if (diff.length > 2)
-						await sb.from("script_updates").insert({
-							script_id: room,
-							client: doc.clientID,
-							data: b64(diff),
-						});
+						await sb
+							.from("script_updates")
+							.insert({
+								script_id: room,
+								client: doc.clientID,
+								data: b64(diff),
+							});
 					if (count > 150)
 						sb.rpc("compact_script", {
 							p_sid: room,
@@ -1703,25 +1732,29 @@
 						clearTimeout(ft);
 						ft = setTimeout(flush, 1500);
 					});
-					sb.channel("naskah-" + room)
-						.on(
-							"postgres_changes",
-							{
-								event: "INSERT",
-								schema: "public",
-								table: "script_updates",
-								filter: `script_id=eq.${room}`,
-							},
-							(p) => {
-								if (+p.new.client !== doc.clientID)
-									Y.applyUpdate(
-										doc,
-										unb64(p.new.data),
-										"cloud",
-									);
-							},
+					const ch = sb.channel("naskah-" + room, {
+						config: { presence: { key: String(doc.clientID) } },
+					});
+					presenceTrack = () => ch.track(me());
+					ch.on(
+						"postgres_changes",
+						{
+							event: "INSERT",
+							schema: "public",
+							table: "script_updates",
+							filter: `script_id=eq.${room}`,
+						},
+						(p) => {
+							if (+p.new.client !== doc.clientID)
+								Y.applyUpdate(doc, unb64(p.new.data), "cloud");
+						},
+					)
+						.on("presence", { event: "sync" }, () =>
+							showPeers(Object.values(ch.presenceState()).flat()),
 						)
-						.subscribe();
+						.subscribe((st) => {
+							if (st === "SUBSCRIBED") presenceTrack();
+						});
 					const owner = row.owner === u.id;
 					$("#invite").hidden = !owner;
 					cloudApi = {
