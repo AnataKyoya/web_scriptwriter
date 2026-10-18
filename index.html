@@ -658,7 +658,7 @@
 					</li>
 					<li>
 						<b>Impor</b>: klik <i>Impor .txt</i> atau seret file ke
-						halaman. Nomor adegan dibuang, indentasi
+						halaman. Nomor adegan dipertahankan, indentasi
 						karakter/dialog/transisi dibaca, lalu semuanya dirender
 						ulang dengan format di sini.
 					</li>
@@ -835,7 +835,7 @@
 
 			/* ---------- Klasifikasi baris -> elemen script ---------- */
 			const SCENE =
-				/^(\.[^.]|(INT|EXT|EST|INT\.?\/EXT|INT\/EXT|I\/E)[. ])/i;
+				/^(\.[^.]|(\d+[A-Za-z]?[.)]?\s+)?(INT|EXT|EST|INT\.?\/EXT|INT\/EXT|I\/E)[. ])/i; // boleh diawali nomor adegan: 1. INT. ...
 			const TRANS =
 				/^>|^[A-Z0-9 .]+ TO:$|^FADE (IN|OUT)[.:]?$|^CUT TO BLACK\.?$/;
 			const caps = (s) => s === s.toUpperCase() && /[A-Z]/.test(s);
@@ -1164,7 +1164,15 @@
 					? items
 							.map(
 								([i, t], n) =>
-									`<button data-i="${i}"><b>${n + 1}</b>${esc(t.replace(/^\./, "").trim())}</button>`,
+									`<button data-i="${i}"><b>${n + 1}</b>${esc(
+										t
+											.replace(/^\./, "")
+											.replace(
+												/^\d+[A-Za-z]?[.)]?\s+/,
+												"",
+											)
+											.trim(),
+									)}</button>`,
 							)
 							.join("")
 					: "<p>Judul adegan muncul di sini begitu kamu menulis INT. atau EXT.</p>";
@@ -1267,13 +1275,11 @@
 						prev = "blank";
 						continue;
 					}
-					const m = s.replace(/^\d+[.)]\s+/, "");
 					let k,
 						t = s;
-					if (SCENE.test(m)) {
-						k = "scene";
-						t = m;
-					} else if (TRANS.test(s)) k = "transition";
+					if (SCENE.test(s))
+						k = "scene"; // nomor adegan di file dipertahankan
+					else if (TRANS.test(s)) k = "transition";
 					else if (prev === "character" || prev === "paren")
 						k = /^\(/.test(s) ? "paren" : "dialogue";
 					else if (
@@ -1921,7 +1927,7 @@
 				"KEMUDIAN",
 			];
 			const HEAD =
-				/^\.?(INT\.\/EXT\.|INT\/EXT\.?|INT\.|EXT\.|EST\.|I\/E\.?)\s(.*)$/i;
+				/^\.?(?:\d+[A-Za-z]?[.)]?\s+)?(INT\.\/EXT\.|INT\/EXT\.?|INT\.|EXT\.|EST\.|I\/E\.?)\s(.*)$/i;
 			const EXTS = ["(V.O.)", "(O.S.)", "(O.C.)", "(CONT'D)"];
 			function itemsFor(L, idx) {
 				const t = L[idx],
@@ -1932,13 +1938,16 @@
 							out.push({ label, value });
 					};
 				const lo = t.toLowerCase();
-				if (t.length >= 2 && !/^[.!@>]/.test(t)) {
+				const nm = t.match(/^(\d+[A-Za-z]?[.)]?\s+)?([\s\S]*)$/),
+					num = nm[1] || "",
+					rest = nm[2].toLowerCase();
+				if (rest.length >= 2 && (num || !/^[.!@>]/.test(t))) {
 					PREFIXES.forEach((o) => {
 						if (
-							o.toLowerCase().startsWith(lo) &&
-							o.toLowerCase() !== lo
+							o.toLowerCase().startsWith(rest) &&
+							o.toLowerCase() !== rest
 						)
-							add(o.trim(), o);
+							add(o.trim(), num + o);
 					});
 					if (out.length) return out;
 				}

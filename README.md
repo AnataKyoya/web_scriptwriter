@@ -26,7 +26,7 @@ Otomatis (tampilan saja, tidak masuk teks) bila karakter yang sama bicara lagi d
 hanya diselingi aksi sampai batas "maks. aksi", tanpa karakter lain di antaranya. Bisa dimatikan di header.
 
 ## Impor
-Klik **Impor .txt** atau seret file .txt/.fountain ke halaman. Nomor adegan dibuang, indentasi dibaca, lalu dirender ulang.
+Klik **Impor .txt** atau seret file .txt/.fountain ke halaman. Nomor adegan dipertahankan, indentasi dibaca, lalu dirender ulang.
 
 Ukuran kertas cetak: ubah `@page{size:letter}` ke `A4` di index.html bila perlu.
 
@@ -49,6 +49,9 @@ dan log dipadatkan otomatis menjadi snapshot bila lebih dari 150 entri. Akses di
 orang yang diundang (tombol **Undang**, lewat email akun mereka) yang bisa membaca atau menulis di database.
 
 Catatan:
+- **Batas email**: layanan email bawaan Supabase hanya mengirim 2 email per jam untuk seluruh proyek, sehingga login bisa gagal dengan
+  "email rate limit exceeded". Untuk pemakaian nyata, pasang SMTP sendiri (Resend, Brevo, dll.) di
+  Authentication > SMTP Settings.
 - WebRTC nonaktif secara bawaan (lihat bagian Kolaborasi). Akses ke data kolaborasi diatur RLS Supabase.
 - Login tautan email memakai PKCE: buka tautannya di browser yang sama dengan tempat kamu meminta login.
 - Proyek Supabase gratis di-pause bila lama tidak dipakai; aktifkan lagi dari dashboard.
