@@ -580,6 +580,23 @@
 			#name {
 				width: 100%;
 			}
+			#surl {
+				width: 100%;
+				margin-top: 0.7rem;
+				font:
+					12.5px/1.45 "Courier Prime",
+					monospace;
+				color: inherit;
+				background: var(--card);
+				border: 1px solid var(--line2);
+				border-radius: 8px;
+				padding: 0.5rem 0.7rem;
+				resize: vertical;
+			}
+			#surl:focus-visible {
+				outline: 2px solid var(--acc);
+				outline-offset: 2px;
+			}
 			.kinds {
 				display: grid;
 				grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1427,6 +1444,43 @@
 									Undang
 								</button>
 								<button
+									id="srv"
+									class="tool"
+									title="Server realtime (alamat signaling WebRTC, mis. dari ngrok)"
+								>
+									<span class="ci"
+										><svg
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<rect
+												x="3"
+												y="4"
+												width="18"
+												height="7"
+												rx="2"
+											/>
+											<rect
+												x="3"
+												y="13"
+												width="18"
+												height="7"
+												rx="2"
+											/>
+											<path
+												d="M7 7.5h.01M7 16.5h.01"
+											/></svg
+									></span>
+									Server
+								</button>
+								<button
 									id="del"
 									class="tool danger"
 									title="Hapus script ini secara permanen"
@@ -1652,6 +1706,35 @@
 				</div>
 			</form>
 		</dialog>
+		<dialog id="sdlg">
+			<form method="dialog">
+				<p>
+					<b>Server realtime</b><br /><small
+						>Alamat server signaling WebRTC (satu per baris), mis.
+						dari ngrok. Disimpan di database dan hanya bisa diubah
+						oleh pemilik naskah atau pemilik proyek. Semua
+						kolaborator otomatis memakai alamat terbaru.</small
+					>
+				</p>
+				<p id="sst" style="margin-top: 0.6rem"><small></small></p>
+				<select
+					id="sscope"
+					style="width: 100%; margin-top: 0.7rem"
+				></select>
+				<textarea
+					id="surl"
+					rows="3"
+					spellcheck="false"
+					placeholder="https://xxxx.ngrok-free.app"
+				></textarea>
+				<p id="smsg" style="margin-top: 0.5rem"><small></small></p>
+				<div>
+					<button value="cancel">Tutup</button
+					><button id="stest" type="button">Tes</button
+					><button id="ssave" type="button">Simpan</button>
+				</div>
+			</form>
+		</dialog>
 		<script type="module">
 			import * as Y from "https://esm.sh/yjs@13.6.18";
 			import { WebrtcProvider } from "https://esm.sh/y-webrtc@10.3.0?deps=yjs@13.6.18";
@@ -1692,19 +1775,35 @@
 				captureTimeout: 600,
 			});
 			const idb = new IndexeddbPersistence("naskah-" + room, doc);
-			// WebRTC hanya aktif bila ada server signaling sendiri (?signal=wss://... atau signaling di config.js).
-			// Server publik bawaan y-webrtc (y-webrtc-eu.fly.dev) sudah mati, jadi tidak dipakai lagi.
+			/* WebRTC hanya aktif bila ada server signaling sendiri. Alamatnya diisi lewat tombol "Server"
+			   di web dan disimpan di database (kolom signaling pada naskah / proyek), bukan di config.js.
+			   Urutan sumber: ?signal= di tautan  >  alamat naskah  >  alamat proyek  >  cache terakhir.
+			   Alamat berubah-ubah (mis. ngrok), jadi provider dibuat ulang saat berganti. */
 			const sigQ = new URLSearchParams(location.search).get("signal");
-			const sigs = sigQ
-				? [sigQ]
-				: (window.NASKAH_CONFIG && window.NASKAH_CONFIG.signaling) ||
-					[];
-			const provider = sigs.length
-				? new WebrtcProvider("naskah-" + room, doc, {
-						password: room,
-						signaling: sigs,
-					})
-				: null;
+			const SIG_CACHE = "naskah:signaling:" + room; // cache per naskah (dipakai saat database tak terjangkau)
+			// alamat dari database: milik naskah ini dan milik proyeknya (yang dipakai: naskah, kalau kosong proyek)
+			const sigSrc = {
+				script: "",
+				project: "",
+				pid: null,
+				pname: "",
+				sowner: null, // id pemilik naskah (null = naskah belum ada di akun)
+				powner: null,
+			};
+			const parseSigs = (t) =>
+				String(t || "")
+					.split(/[\s,]+/)
+					.map((x) =>
+						x
+							.trim()
+							.replace(/^https:\/\//i, "wss://")
+							.replace(/^http:\/\//i, "ws://")
+							.replace(/\/+$/, ""),
+					)
+					.filter((x) => /^wss?:\/\//i.test(x));
+			let provider = null,
+				sigList = [],
+				sigChanged = () => {};
 			const myColor = `hsl(${Math.floor(Math.random() * 360)} 65% 60%)`;
 			const me = () => ({
 				name: $("#name").value.trim() || "Anonim",
@@ -1732,14 +1831,196 @@
 				setUser();
 			};
 			setUser();
-			if (provider)
-				provider.awareness.on("change", () =>
-					showPeers(
-						[...provider.awareness.getStates().values()]
-							.map((x) => x.user)
-							.filter(Boolean),
-					),
+			function setSignaling(urls) {
+				urls = [...new Set(urls)];
+				if (JSON.stringify(urls) === JSON.stringify(sigList)) return;
+				sigList = urls;
+				const had = !!provider;
+				if (provider) {
+					provider.destroy();
+					provider = null;
+				}
+				if (urls.length) {
+					const pv = new WebrtcProvider("naskah-" + room, doc, {
+						password: room,
+						signaling: urls,
+					});
+					provider = pv;
+					pv.awareness.on("change", () =>
+						showPeers(
+							[...pv.awareness.getStates().values()]
+								.map((x) => x.user)
+								.filter(Boolean),
+						),
+					);
+					setUser();
+				} else if (had) showPeers([]);
+				sigChanged();
+			}
+			// alamat efektif: milik naskah ini, kalau kosong milik proyeknya
+			function applySig() {
+				const own = parseSigs(sigSrc.script),
+					l = own.length ? own : parseSigs(sigSrc.project);
+				ls.set(SIG_CACHE, l.join("\n"));
+				if (!sigQ) setSignaling(l); // ?signal= di tautan selalu menang
+			}
+			{
+				const cached = parseSigs(ls.get(SIG_CACHE));
+				setSignaling(sigQ ? [sigQ] : cached);
+			}
+
+			/* ---------- Dialog "Server realtime" ---------- */
+			const sdlg = $("#sdlg"),
+				sMsg = (t) => ($("#smsg small").textContent = t),
+				pName = () => `“${sigSrc.pname || "tanpa nama"}”`;
+			function srvStatus() {
+				const on =
+						provider &&
+						provider.signalingConns.some((c) => c.connected),
+					src = parseSigs(sigSrc.script).length
+						? "naskah ini"
+						: parseSigs(sigSrc.project).length
+							? "proyek " + pName()
+							: "";
+				$("#sst small").textContent =
+					(sigList.length
+						? on
+							? "● Tersambung ke server"
+							: "○ Mencoba menyambung…"
+						: "Belum ada server: realtime WebRTC mati") +
+					(sigQ
+						? " · memakai ?signal= dari tautan"
+						: src
+							? " · alamat dari " + src
+							: "");
+			}
+			sigChanged = () => {
+				if (sdlg.open) srvStatus();
+			};
+			function srvBuild() {
+				const sel = $("#sscope"),
+					keep = sel.value;
+				sel.replaceChildren(new Option("Untuk naskah ini", "script"));
+				if (sigSrc.pid)
+					sel.add(
+						new Option(
+							"Untuk seluruh proyek " + pName(),
+							"project",
+						),
+					);
+				sel.hidden = !sigSrc.pid;
+				sel.value =
+					keep === "project" && sigSrc.pid ? "project" : "script";
+			}
+			function srvFill() {
+				const u = srvApi && srvApi.user(),
+					sc = $("#sscope").value,
+					can =
+						!!u &&
+						(sc === "project"
+							? sigSrc.powner === u.id
+							: sigSrc.sowner === u.id);
+				$("#surl").value =
+					sc === "project" ? sigSrc.project : sigSrc.script;
+				$("#surl").readOnly = !can;
+				$("#ssave").hidden = !can;
+				sMsg(
+					!u
+						? "Masuk dulu untuk mengubah alamat."
+						: sigSrc.sowner === null
+							? "Naskah ini belum tersimpan di akun, jadi alamatnya belum bisa diatur."
+							: can
+								? sc === "project"
+									? "Berlaku untuk semua naskah di proyek ini, kecuali naskah yang punya alamat sendiri."
+									: "Tempel URL dari ngrok; https:// otomatis jadi wss://. Mengalahkan alamat proyek."
+								: sc === "project"
+									? "Hanya pemilik proyek yang bisa mengubah alamat proyek."
+									: "Hanya pemilik naskah yang bisa mengubah alamat ini.",
 				);
+			}
+			const srvErr = (e) => {
+				const m =
+					((e && e.message) || "") + " " + ((e && e.code) || "");
+				return /not_owner/.test(m)
+					? "Hanya pemilik yang bisa mengubah."
+					: /bad_url/.test(m)
+						? "Alamat tidak valid. Contoh: https://xxxx.ngrok-free.app"
+						: /too_many/.test(m)
+							? "Maksimal 5 alamat."
+							: /PGRST20|Could not find|does not exist/i.test(m)
+								? "Jalankan schema_signaling.sql di Supabase dulu."
+								: m.trim() || "Gagal.";
+			};
+			$("#srv").onclick = () => {
+				if (!srvApi) {
+					alert(
+						"Alamat server disimpan di Supabase. Isi config.js (URL dan key Supabase) lebih dulu.",
+					);
+					return;
+				}
+				srvBuild();
+				srvFill();
+				srvStatus();
+				sdlg.showModal();
+				const tm = setInterval(srvStatus, 1000);
+				sdlg.addEventListener("close", () => clearInterval(tm), {
+					once: true,
+				});
+				srvApi.refresh().then(() => {
+					if (!sdlg.open) return;
+					srvBuild();
+					srvFill();
+					srvStatus();
+				});
+			};
+			$("#sscope").onchange = srvFill;
+			$("#ssave").onclick = async () => {
+				const sc = $("#sscope").value;
+				sMsg("Menyimpan…");
+				const { data, error } = await srvApi.save(sc, $("#surl").value);
+				if (error) return sMsg(srvErr(error));
+				if (sc === "project") sigSrc.project = data || "";
+				else sigSrc.script = data || "";
+				$("#surl").value = data || "";
+				applySig();
+				srvStatus();
+				sMsg(
+					data
+						? "Tersimpan. Kolaborator yang sedang membuka akan menyambung ulang otomatis."
+						: "Dikosongkan.",
+				);
+			};
+			$("#stest").onclick = () => {
+				const urls = parseSigs($("#surl").value);
+				if (!urls.length) return sMsg("Isi alamat dulu.");
+				sMsg("Menguji…");
+				Promise.all(
+					urls.map(
+						(u) =>
+							new Promise((res) => {
+								let w = null,
+									done = false;
+								const t = setTimeout(() => fin(false), 6000);
+								function fin(ok) {
+									if (done) return;
+									done = true;
+									clearTimeout(t);
+									try {
+										w && w.close();
+									} catch {}
+									res(`${ok ? "✓" : "✗"} ${u}`);
+								}
+								try {
+									w = new WebSocket(u);
+									w.onopen = () => fin(true);
+									w.onerror = () => fin(false);
+								} catch {
+									fin(false);
+								}
+							}),
+					),
+				).then((r) => sMsg(r.join("   ")));
+			};
 
 			/* ---------- Klasifikasi baris -> elemen script ---------- */
 			const SCENE =
@@ -2990,6 +3271,7 @@
 			/* ---------- Supabase: akun + simpan ke database (opsional, lihat config.js) ---------- */
 			let cloudApi = null,
 				delCloud = null,
+				srvApi = null,
 				lastTitle = "";
 			const CFG = window.NASKAH_CONFIG || {};
 			const b64 = (u) => {
@@ -3019,6 +3301,53 @@
 					attached = null,
 					q = [],
 					ft = null;
+				// alamat server signaling disimpan di naskah / proyek (berubah tiap ngrok dijalankan ulang)
+				const loadSig = async () => {
+					if (!attached) return;
+					const { data: r, error } = await sb
+						.from("scripts")
+						.select("signaling,project_id,owner")
+						.eq("id", room)
+						.maybeSingle();
+					if (error || !r) return; // kolom belum ada / naskah belum di akun: biarkan cache
+					sigSrc.script = r.signaling || "";
+					sigSrc.sowner = r.owner;
+					sigSrc.pid = r.project_id || null;
+					sigSrc.project = "";
+					sigSrc.pname = "";
+					sigSrc.powner = null;
+					if (r.project_id) {
+						const { data: p } = await sb
+							.from("projects")
+							.select("name,owner,signaling")
+							.eq("id", r.project_id)
+							.maybeSingle();
+						if (p) {
+							sigSrc.project = p.signaling || "";
+							sigSrc.pname = p.name || "";
+							sigSrc.powner = p.owner;
+						}
+					}
+					applySig();
+				};
+				document.addEventListener("visibilitychange", () => {
+					if (!document.hidden) loadSig();
+				});
+				addEventListener("online", loadSig);
+				srvApi = {
+					user: () => user,
+					refresh: loadSig,
+					save: (scope, t) =>
+						scope === "project"
+							? sb.rpc("set_project_signaling", {
+									p_pid: sigSrc.pid,
+									p_urls: t,
+								})
+							: sb.rpc("set_script_signaling", {
+									p_sid: room,
+									p_urls: t,
+								}),
+				};
 				btn.hidden = false;
 				delCloud = async (id) => {
 					const { data, error } = await sb
@@ -3172,6 +3501,40 @@
 								Y.applyUpdate(doc, unb64(p.new.data), "cloud");
 						},
 					)
+						.on(
+							"postgres_changes",
+							{
+								event: "UPDATE",
+								schema: "public",
+								table: "scripts",
+								filter: `id=eq.${room}`,
+							},
+							(p) => {
+								// updated_at ikut berubah tiap edit, jadi muat ulang hanya bila alamat/proyek berganti
+								const n = p.new || {};
+								if (
+									(n.signaling || "") !== sigSrc.script ||
+									(n.project_id || null) !== sigSrc.pid
+								)
+									loadSig();
+							},
+						)
+						.on(
+							"postgres_changes",
+							{
+								event: "UPDATE",
+								schema: "public",
+								table: "projects",
+							},
+							(p) => {
+								const n = p.new || {};
+								if (
+									n.id === sigSrc.pid &&
+									(n.signaling || "") !== sigSrc.project
+								)
+									loadSig();
+							},
+						)
 						.on("presence", { event: "sync" }, () =>
 							showPeers(Object.values(ch.presenceState()).flat()),
 						)
@@ -3225,6 +3588,7 @@
 						);
 					};
 					status("☁ tersimpan di akun");
+					loadSig();
 				}
 				sb.auth.onAuthStateChange((_ev, session) => {
 					user = (session && session.user) || null;
