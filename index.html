@@ -275,6 +275,9 @@
 					monospace;
 				font-size: 12pt;
 				font-size: min(12pt, calc(100cqw / var(--pw)));
+
+				font-size: min(12pt, calc(100cqw / var(--pw)));
+				text-rendering: geometricPrecision;
 			}
 			#pages {
 				position: absolute;
@@ -863,7 +866,7 @@
 			}
 
 			/* desktop: sidebar & panel alat diam, hanya kertas yang scroll */
-			@media (min-width: 1101px) {
+			@media screen and (min-width: 1101px) {
 				html,
 				body {
 					height: 100%;
@@ -896,7 +899,7 @@
 					flex: 0 0 auto;
 				}
 			}
-			@media (max-width: 1100px) {
+			@media screen and (max-width: 1100px) {
 				#side,
 				#tools {
 					flex: 1 1 100%;
@@ -907,7 +910,7 @@
 					max-height: none;
 				}
 			}
-			@media (max-width: 820px) {
+			@media screen and (max-width: 820px) {
 				#chip,
 				#pages {
 					display: none;
@@ -968,6 +971,10 @@
 				}
 				.center {
 					height: auto !important;
+				}
+				.center,
+				main {
+					display: block !important;
 				}
 				#pages {
 					display: none !important;
@@ -2139,7 +2146,7 @@
 				mainEl = $("main"),
 				psize = $("#psize"),
 				pgStyle = $("#pgsz"),
-				fluidMQ = matchMedia("(max-width: 820px)");
+				fluidMQ = matchMedia("screen and (max-width: 820px)");
 			let paperKey = ls.get("naskah:paper");
 			if (!PAPERS[paperKey]) paperKey = "letter";
 			let pgCfg = null;
