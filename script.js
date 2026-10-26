@@ -4,6 +4,10 @@ import { IndexeddbPersistence } from "https://esm.sh/y-indexeddb@9.0.12?deps=yjs
 
 const $ = (s) => document.querySelector(s),
 	ed = $("#ed");
+
+const side = $("#side"),
+	tools = $("#tools");
+
 const ls = {
 	get: (k) => {
 		try {
@@ -223,9 +227,6 @@ $("#srv").onclick = () => {
 		srvStatus();
 	});
 };
-
-const side = $("#side"),
-	tools = $("#tools");
 
 document.querySelectorAll(".humberg_menu").forEach((a) => {
 	a.onclick = () => {
@@ -2615,6 +2616,7 @@ $("#kinds").onclick = (e) => {
 	if (!b) return;
 	kindSel.value = b.dataset.k;
 	applyKind(b.dataset.k);
+	tools.classList.toggle("hide");
 };
 const ddlg = $("#ddlg");
 async function deleteScript(id) {
