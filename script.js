@@ -1813,7 +1813,8 @@ async function initCloud() {
 	let user = null,
 		attached = null,
 		q = [],
-		ft = null;
+		ft = null,
+		username = "Masuk";
 	// alamat server signaling disimpan di naskah / proyek (berubah tiap ngrok dijalankan ulang)
 	const loadSig = async () => {
 		if (!attached) return;
@@ -1877,6 +1878,8 @@ async function initCloud() {
 				location.reload();
 			}
 		};
+
+		a.textContent = username;
 	});
 	delCloud = async (id) => {
 		const { data, error } = await sb
@@ -2117,7 +2120,7 @@ async function initCloud() {
 	sb.auth.onAuthStateChange((_ev, session) => {
 		user = (session && session.user) || null;
 		projApi = user ? makeProjApi(sb, user) : null;
-		btn.textContent = user ? `${user.email} · Keluar` : "Masuk";
+		username = user ? `${user.email} · Keluar` : "Masuk";
 		if (user)
 			setTimeout(() => {
 				refreshProj();
