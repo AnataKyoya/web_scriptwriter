@@ -1367,7 +1367,8 @@ nav.onclick = (e) => {
 		behavior: calm,
 		block: "center",
 	});
-	if (innerWidth <= 1100) B.classList.remove("nav");
+	// if (innerWidth <= 1100) B.classList.remove("nav");
+	side.classList.toggle("hide");
 };
 const tog = (id, el, cls, key, def) => {
 	const b = $(id),

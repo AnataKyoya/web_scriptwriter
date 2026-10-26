@@ -916,7 +916,6 @@ body.drop::after {
 		max-width: 0;
 		width: 0;
 	}
-
 	#side.hide > *,
 	#tools.hide > *,
 	.login_button.hide {
@@ -926,15 +925,6 @@ body.drop::after {
 	#navbar_mobile,
 	.icon_menu {
 		display: flex;
-	}
-}
-@media screen and (max-width: 820px) {
-	#chip,
-	#pages {
-		display: none;
-	}
-	main {
-		padding: 16px 10px 8px;
 	}
 	#side,
 	#tools {
@@ -958,6 +948,15 @@ body.drop::after {
 		.tools_menu {
 			justify-content: end;
 		}
+	}
+}
+@media screen and (max-width: 820px) {
+	#chip,
+	#pages {
+		display: none;
+	}
+	main {
+		padding: 16px 10px 8px;
 	}
 	.paper {
 		width: 100%;
