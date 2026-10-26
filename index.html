@@ -24,7 +24,61 @@
 	</head>
 	<body>
 		<div class="app">
-			<aside id="side">
+			<nav id="navbar_mobile">
+				<div class="humberg_menu icon_menu">
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					>
+						<line x1="3" y1="6" x2="21" y2="6" />
+						<line x1="3" y1="12" x2="21" y2="12" />
+						<line x1="3" y1="18" x2="21" y2="18" />
+					</svg>
+				</div>
+				<div class="tbar">
+					<span id="peers"></span>
+					<button
+						id="login"
+						hidden
+						title="Masuk agar naskah tersimpan di akun"
+					>
+						Masuk
+					</button>
+				</div>
+				<div class="tools_menu icon_menu">
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M12 20h9" />
+						<path
+							d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+						/>
+					</svg>
+				</div>
+			</nav>
+
+			<aside id="side" class="hide">
+				<div class="humberg_menu icon_menu">
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					>
+						<line x1="3" y1="6" x2="21" y2="6" />
+						<line x1="3" y1="12" x2="21" y2="12" />
+						<line x1="3" y1="18" x2="21" y2="18" />
+					</svg>
+				</div>
 				<div class="stick">
 					<div class="brand">
 						<svg
@@ -151,9 +205,24 @@
 				</footer>
 			</div>
 
-			<aside id="tools">
+			<aside id="tools" class="hide">
+				<div class="tools_menu icon_menu">
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M12 20h9" />
+						<path
+							d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+						/>
+					</svg>
+				</div>
 				<div class="stick">
-					<div class="tbar">
+					<div class="tbar login_button hide">
 						<span id="peers"></span>
 						<button
 							id="login"

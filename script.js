@@ -223,6 +223,21 @@ $("#srv").onclick = () => {
 		srvStatus();
 	});
 };
+
+const side = $("#side"),
+	tools = $("#tools");
+
+document.querySelectorAll(".humberg_menu").forEach((a) => {
+	a.onclick = () => {
+		side.classList.toggle("hide");
+	};
+});
+document.querySelectorAll(".tools_menu").forEach((a) => {
+	a.onclick = () => {
+		tools.classList.toggle("hide");
+	};
+});
+
 $("#sscope").onchange = srvFill;
 $("#ssave").onclick = async () => {
 	const sc = $("#sscope").value;
