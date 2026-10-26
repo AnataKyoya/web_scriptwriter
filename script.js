@@ -1813,8 +1813,8 @@ async function initCloud() {
 	let user = null,
 		attached = null,
 		q = [],
-		ft = null,
-		username = "Masuk";
+		ft = null;
+
 	// alamat server signaling disimpan di naskah / proyek (berubah tiap ngrok dijalankan ulang)
 	const loadSig = async () => {
 		if (!attached) return;
@@ -1862,6 +1862,23 @@ async function initCloud() {
 						p_urls: t,
 					}),
 	};
+	btn.forEach((a) => {
+		a.hidden = false;
+
+		a.onclick = async () => {
+			if (!user) {
+				$("#amsg").textContent = "";
+				$("#adlg").showModal();
+				return;
+			}
+			if (
+				confirm("Keluar dari akun? Naskah di perangkat ini tetap ada.")
+			) {
+				await sb.auth.signOut();
+				location.reload();
+			}
+		};
+	});
 	delCloud = async (id) => {
 		const { data, error } = await sb
 			.from("scripts")
@@ -2101,7 +2118,9 @@ async function initCloud() {
 	sb.auth.onAuthStateChange((_ev, session) => {
 		user = (session && session.user) || null;
 		projApi = user ? makeProjApi(sb, user) : null;
-		username = user ? `${user.email} · Keluar` : "Masuk";
+		btn.forEach((a) => {
+			a.textContent = user ? `${user.email} · Keluar` : "Masuk";
+		});
 		if (user)
 			setTimeout(() => {
 				refreshProj();
@@ -2129,26 +2148,6 @@ async function initCloud() {
 				: error.message
 			: "Tautan dikirim. Buka emailmu di browser ini, lalu klik tautannya.";
 	};
-
-	btn.forEach((a) => {
-		a.hidden = false;
-
-		a.onclick = async () => {
-			if (!user) {
-				$("#amsg").textContent = "";
-				$("#adlg").showModal();
-				return;
-			}
-			if (
-				confirm("Keluar dari akun? Naskah di perangkat ini tetap ada.")
-			) {
-				await sb.auth.signOut();
-				location.reload();
-			}
-		};
-
-		a.textContent = username;
-	});
 }
 
 /* ---------- Saran otomatis: judul adegan & karakter ---------- */
