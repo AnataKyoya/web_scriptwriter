@@ -1796,7 +1796,7 @@ const b64 = (u) => {
 };
 const unb64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0));
 async function initCloud() {
-	const btn = $("#login"),
+	const btn = document.querySelectorAll("#login"),
 		cl = $("#cl"),
 		status = (m) => {
 			cl.textContent = m;
@@ -1861,7 +1861,23 @@ async function initCloud() {
 						p_urls: t,
 					}),
 	};
-	btn.hidden = false;
+	btn.forEach((a) => {
+		a.hidden = false;
+
+		a.onclick = async () => {
+			if (!user) {
+				$("#amsg").textContent = "";
+				$("#adlg").showModal();
+				return;
+			}
+			if (
+				confirm("Keluar dari akun? Naskah di perangkat ini tetap ada.")
+			) {
+				await sb.auth.signOut();
+				location.reload();
+			}
+		};
+	});
 	delCloud = async (id) => {
 		const { data, error } = await sb
 			.from("scripts")
@@ -2108,17 +2124,6 @@ async function initCloud() {
 				attach(user).catch((e) => status("☁ " + e.message));
 			}, 0);
 	});
-	btn.onclick = async () => {
-		if (!user) {
-			$("#amsg").textContent = "";
-			$("#adlg").showModal();
-			return;
-		}
-		if (confirm("Keluar dari akun? Naskah di perangkat ini tetap ada.")) {
-			await sb.auth.signOut();
-			location.reload();
-		}
-	};
 	$("#email").onkeydown = (e) => {
 		if (e.key === "Enter") {
 			e.preventDefault();
