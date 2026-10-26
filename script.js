@@ -1862,25 +1862,6 @@ async function initCloud() {
 						p_urls: t,
 					}),
 	};
-	btn.forEach((a) => {
-		a.hidden = false;
-
-		a.onclick = async () => {
-			if (!user) {
-				$("#amsg").textContent = "";
-				$("#adlg").showModal();
-				return;
-			}
-			if (
-				confirm("Keluar dari akun? Naskah di perangkat ini tetap ada.")
-			) {
-				await sb.auth.signOut();
-				location.reload();
-			}
-		};
-
-		a.textContent = username;
-	});
 	delCloud = async (id) => {
 		const { data, error } = await sb
 			.from("scripts")
@@ -2148,6 +2129,26 @@ async function initCloud() {
 				: error.message
 			: "Tautan dikirim. Buka emailmu di browser ini, lalu klik tautannya.";
 	};
+
+	btn.forEach((a) => {
+		a.hidden = false;
+
+		a.onclick = async () => {
+			if (!user) {
+				$("#amsg").textContent = "";
+				$("#adlg").showModal();
+				return;
+			}
+			if (
+				confirm("Keluar dari akun? Naskah di perangkat ini tetap ada.")
+			) {
+				await sb.auth.signOut();
+				location.reload();
+			}
+		};
+
+		a.textContent = username;
+	});
 }
 
 /* ---------- Saran otomatis: judul adegan & karakter ---------- */
